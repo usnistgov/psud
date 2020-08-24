@@ -1,0 +1,211 @@
+---
+title: "Keyword Selection"
+author: "Jaden Pieper"
+date: "8/21/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r Initialization,include=FALSE}
+#=======================Initialization===================
+# clear work space
+rm(list = ls())
+# Required packages
+packages <- c(
+  "ggpubr",
+  "dplyr",
+  "ggplot2",
+  "gtools"
+)
+# Install any packages that need it
+if (length(setdiff(packages, rownames(installed.packages()))) > 0) {
+  install.packages(setdiff(packages, rownames(installed.packages())))
+}
+# Bring required packages into library
+lapply(
+  packages,
+  FUN = function(packages) {
+    do.call("require", list(packages))
+  }
+)
+
+# Directory stuff depending on what computer I'm using
+laptop = TRUE
+if(laptop){
+  mcv_name = "MCV_671DRDOG"
+} else{
+  mcv_name = "MCV"
+}
+setwd(file.path("D:",mcv_name,"PAR"))
+
+```
+
+```{r Load Data,echo=FALSE}
+data_path <- file.path("intelScores.csv")
+df <- read.csv(data_path)
+```
+
+## Steve's Selections
+
+```{r Steve Selections,echo=FALSE}
+steve_choice <- data.frame("F1"= c('F1_b4_w2_orig.wav', 
+                                   'F1_b4_w6_orig.wav', 
+                                   'F1_b5_w2_orig.wav', 
+                                   'F1_b7_w5_orig.wav', 
+                                   'F1_b8_w2_orig.wav', 
+                                   'F1_b8_w5_orig.wav', 
+                                   'F1_b9_w1_orig.wav', 
+                                   'F1_b11_w3_orig.wav', 
+                                   'F1_b12_w5_orig.wav', 
+                                   'F1_b14_w3_orig.wav'),
+                           "F3" = c(
+                             'F3_b3_w1_orig.wav', 
+                             'F3_b4_w3_orig.wav', 
+                             'F3_b4_w4_orig.wav', 
+                             'F3_b10_w1_orig.wav', 
+                             'F3_b16_w2_orig.wav', 
+                             'F3_b20_w1_orig.wav', 
+                             'F3_b22_w1_orig.wav', 
+                             'F3_b22_w2_orig.wav', 
+                             'F3_b26_w6_orig.wav', 
+                             'F3_b29_w1_orig.wav'),
+                           "M3" = c(
+                             'M3_b14_w5_orig.wav', 
+                             'M3_b21_w3_orig.wav', 
+                             'M3_b22_w4_orig.wav', 
+                             'M3_b37_w1_orig.wav', 
+                             'M3_b38_w1_orig.wav', 
+                             'M3_b41_w1_orig.wav', 
+                             'M3_b42_w3_orig.wav', 
+                             'M3_b37_w2_orig.wav', 
+                             'M3_b24_w2_orig.wav', 
+                             'M3_b36_w5_orig.wav'),
+                           "M4" = c(
+                             'M4_b3_w3_orig.wav', 
+                             'M4_b7_w1_orig.wav', 
+                             'M4_b7_w2_orig.wav', 
+                             'M4_b13_w4_orig.wav', 
+                             'M4_b14_w1_orig.wav', 
+                             'M4_b15_w4_orig.wav', 
+                             'M4_b16_w1_orig.wav', 
+                             'M4_b16_w3_orig.wav', 
+                             'M4_b17_w6_orig.wav', 
+                             'M4_b20_w4_orig.wav'
+                           )
+)
+knitr::kable(steve_choice)
+```
+
+
+
+```{r Split by talker,echo=FALSE}
+N_words <- 10
+
+talkers <- c("F1","F3","M3","M4")
+
+t_split <- lapply(talkers,
+                  function(x){
+                    df[grepl(x,df$Clip),]
+                  }
+                  
+)
+names(t_split) <- talkers
+```
+
+## ABC-MRT16 Determinations
+
+
+### Group by Clip only
+Here we group by clip only, and calculate mean and standard deviation across all trials for all codecs.
+```{r clip group, echo=FALSE}
+top_words <- list()
+all_stats <- list()
+for(talker in talkers){
+  est_dat <- filter(t_split[[talker]],Estimator == "ABC-MRT16")
+  
+  tdat <- group_by(est_dat,Clip)
+  t_stats <- summarise(tdat,mean=mean(Value),sd=sd(Value))
+  t_stats <- t_stats[mixedorder(as.character(t_stats$Clip)),]
+  t_stats<- t_stats[order(t_stats$mean,-t_stats$sd,decreasing = TRUE),]
+  all_stats[[talker]] <- t_stats
+  top_words[[talker]] <- t_stats[1:N_words,]
+}
+
+ggplot(bind_rows(top_words),aes(x=Clip))+
+  geom_point(aes(y=mean))+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  scale_y_continuous(breaks = seq(0,1,1/8),minor_breaks = seq(0,1,1/16),limits = c(0,1))
+ggplot(bind_rows(top_words),aes(x=Clip))+
+  geom_point(aes(y=sd))+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+selected_clips <- as.data.frame(bind_cols(lapply(top_words,function(x){x$Clip})))
+knitr::kable(selected_clips)
+```
+
+### Differences in selections
+```{r diff, echo=FALSE}
+ms <- mapply(setdiff,selected_clips,steve_choice)
+sm <- mapply(setdiff,steve_choice,selected_clips)
+
+knitr::kable(bind_rows(unlist(ms),unlist(sm)))
+
+for(t in names(ms)){
+  if(!identical(ms[[t]],character(0))){
+    c1 <- all_stats[[t]][all_stats[[t]]$Clip == ms[[t]],]
+    c2 <- all_stats[[t]][all_stats[[t]]$Clip == sm[[t]],]
+    
+    cstats <- bind_rows(c1,c2)
+    print(knitr::kable(cstats))
+    cat("\n")
+  }
+}
+
+```
+
+### Group by Clip and Codec
+Here we take the data and group by Clip and Codec. Calculate mean and standard deviation for each codec individually, then aggregate. 
+
+NOTE: Not doing it very well yet....
+
+Question for Monday: Why does only ABC-MRT's histogram seem to fulfill count requirements (1500 trials per estimator...)
+```{r codec group, echo=FALSE}
+for(talker in talkers){
+  tdat <- group_by(t_split[[talker]],Clip,Codec,Estimator)
+  t_stats <- summarise(tdat,mean=mean(Value),sd=sd(Value))
+  
+  t_stats<- t_stats[order(t_stats$mean,-t_stats$sd,decreasing = TRUE),]
+  
+  top_words <- t_stats[1:N_words,]
+}
+ah <- t_split$F1
+so <- summarise(group_by(ah,Clip,Codec,Estimator),mean=mean(Value),sd=sd(Value))
+
+ggplot(so,aes(x=mean))+geom_histogram(aes(fill=Estimator))
+
+my_plot<-function(df,est){
+  g <- ggplot(filter(df,Estimator == est,mean > 0.99),aes(x=Clip,y=mean))+
+    geom_point(aes(color=Codec))+
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+    ylab(est)+
+    ggtitle(paste(est,"Intelligibility"))
+  
+  return(g)
+}
+estimators <- unique(df$Estimator)
+um <- lapply(estimators,function(x){my_plot(so,x)})
+names(um) <- estimators
+um[[1]]
+ha <- ggarrange(plotlist=um,nrow=length(estimators))
+
+# p<-ggplot(t_split$F1,aes(x=Clip,y=Value))+
+#   geom_point(aes(color=Codec,shape=Estimator))+
+#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+# print(p)
+```
+
