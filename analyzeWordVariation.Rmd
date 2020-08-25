@@ -193,9 +193,11 @@ for(t in names(ms)){
 
 ```
 
-### Group by Clip and Codec
+### Remaining question
+Need to go through Steve's code and figure out what is causing the discrepancies between our results in the first place...
 
 ```{r codec group, echo=FALSE}
+### Group by Clip and Codec
 # Here we take the data and group by Clip and Codec. Calculate mean and standard deviation for each codec individually, then aggregate. 
 # 
 # NOTE: Not doing it very well yet....
