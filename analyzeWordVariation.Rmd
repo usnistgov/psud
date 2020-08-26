@@ -121,12 +121,14 @@ t_split <- lapply(talkers,
 names(t_split) <- talkers
 ```
 
-## ABC-MRT16 Determinations
+## Jaden's ABC-MRT16 Determinations
 I am primarily interested in ABC-MRT16, so will first focus my analysis strictly on its intelligibility estimates.
 
 ### Group by Clip only
 Here we group by clip only, and calculate mean and standard deviation across all trials for all codecs.
 ```{r clip group, echo=FALSE}
+
+#TODO: Ordering level of factors is not proper mixed order...could potentially benefit from being fixed for plot readability.
 
 Estimator <- "ABC-MRT16"
 
@@ -193,8 +195,114 @@ for(t in names(ms)){
 
 ```
 
-### Remaining question
-Need to go through Steve's code and figure out what is causing the discrepancies between our results in the first place...
+## Why the difference?
+In Steve's code he mentions describes the selection process as follows:
+
+"Looking for nWords words from each talker.  Would like the words to be unique so
+we get maximum diversity when testing SUTs.  So we will pick the best unique
+words from each talker in order of inverse availability. First we pick words
+from Talker 3 (since it has the fewest options), then Talker 2, then Talker 4,
+then Talker 1."
+
+This uniqueness restriction was not present in my analysis and I think describes why our results were not identical. 
+
+### Selection with Uniqueness requirement
+
+The number of MRT keywords with mean ABC-MRT16 intelligibility of 1 and standard deviation of zero for each talker is shown below.
+```{r number of ideal words per talker, echo= FALSE}
+n_ideal_words <- sapply(all_stats,function(x){sum(x$mean == 1 & x$sd == 0)})
+selection_order <- names(n_ideal_words)[order(n_ideal_words)]
+
+knitr::kable(t(n_ideal_words))
+```
+
+As such we will select words for the talkers with the least amount of ideal keywords first, ensuring they are able to use all of their best keywords. We then restrict uniqueness on subsequent talkers. The selection order is thus `r selection_order`.
+
+
+```{r unique words, echo= FALSE}
+# Perform selection while ensuring uniqueness between all sets of words across talkers. 
+unique_top_words <- c()
+top_unique_words <- list()
+for(t in selection_order){
+  # Vector of words to choose
+  selected_ix <- 1:N_words
+  # Currently last selected word
+  c_words <- N_words
+  
+  # Grab first guess at words
+  words<- all_stats[[t]][1:N_words,]
+  
+  # Remove talker from clip name
+  word_vec <- strsplit(as.character(words$Clip),"_")
+  no_talker<-sapply(word_vec,function(x){paste(x[2:length(x)],collapse="_")})
+  
+  # Identify if any MRT keywords have been used previously
+  non_unique <- intersect(unique_top_words,no_talker)
+  while(!identical(non_unique,character(0))){
+    # Find all the repeated keywords
+    l_ix <- lapply(non_unique,function(x){x == no_talker})
+    remove_ix <- Reduce("|",l_ix)
+    
+    # Remove them from selection
+    selected_ix <- selected_ix[!remove_ix]
+    while(length(selected_ix) < N_words){
+      # Move to next keyword in list
+      c_words <- c_words + 1
+      # Add to selection
+      selected_ix <- c(selected_ix,c_words)
+      
+    }
+    # Update word selections
+    words<- all_stats[[t]][selected_ix,]
+    
+    # Remove Talker from clip name
+    word_vec <- strsplit(as.character(words$Clip),"_")
+    no_talker<-sapply(word_vec,function(x){paste(x[2:length(x)],collapse="_")})
+    
+    # Identify if any MRT keywords repeated in new list
+    non_unique <- intersect(unique_top_words,no_talker)
+  }
+  # Save unique talkerless-keyword identifiers
+  unique_top_words <- c(unique_top_words, no_talker)
+  top_unique_words[[t]] <- words
+}
+
+unique_selected_clips <- as.data.frame(bind_cols(lapply(top_unique_words,function(x){x$Clip})))
+unique_selected_clips <- unique_selected_clips[,talkers]
+knitr::kable(unique_selected_clips)
+```
+
+### Differences in selections
+Here we find that with the uniqueness restriction we have selected the exact same clips as Steve!
+```{r unique diff, echo=FALSE}
+ums <- mapply(setdiff,unique_selected_clips,steve_choice)
+usm <- mapply(setdiff,steve_choice,unique_selected_clips)
+
+knitr::kable(bind_rows(unlist(ums),unlist(usm)))
+```
+
+### Additional Plots
+
+Here we include the same plots as above but for the uniquely selected keyword lists.
+
+```{r extra-plots, echo=FALSE}
+ggplot(bind_rows(top_unique_words),aes(x=Clip))+
+  geom_point(aes(y=mean))+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  scale_y_continuous(breaks = seq(0,1,1/8),minor_breaks = seq(0,1,1/16),limits = c(0,1))
+
+ggplot(bind_rows(top_unique_words),aes(x=Clip))+
+  geom_point(aes(y=mean))+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+ggplot(bind_rows(top_unique_words),aes(x=Clip))+
+  geom_point(aes(y=sd))+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+```
 
 ```{r codec group, echo=FALSE}
 ### Group by Clip and Codec
