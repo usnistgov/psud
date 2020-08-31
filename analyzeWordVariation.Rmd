@@ -2,7 +2,9 @@
 title: "Keyword Selection"
 author: "Jaden Pieper"
 date: "8/21/2020"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -303,6 +305,34 @@ ggplot(bind_rows(top_unique_words),aes(x=Clip))+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
 ```
+
+## Revisiting the Original Keywords
+
+```{r old keywords, echo=FALSE}
+old_kw <- c(F1="F1_b39_w4_orig.wav",
+            F3="F3_b15_w5_orig.wav",
+            M3="M3_b22_w3_orig.wav",
+            M4="M4_b18_w4_orig.wav")
+```
+
+The original keywords were `r old_kw`. Here we look at their performance from the lense of maximizing average intelligibility while minimizing variation. 
+
+```{r old keyword stats, echo=FALSE}
+old_stats_l <- list()
+o_kw_rank <- list()
+for(t in talkers){
+  o_kw <- old_kw[t]
+  o_kw_ix <- all_stats[[t]]$Clip == o_kw
+  old_stats_l[[t]]<-all_stats[[t]][o_kw_ix,]
+  old_stats_l[[t]]$rank <-which(o_kw_ix)
+  
+}
+old_stats <- bind_rows(old_stats_l)
+# old_ranks <- bind_rows(o_kw_rank)
+knitr::kable(old_stats)
+```
+
+It is easy to see that none of these keywords exhibit the desired properties. F1_b39_w4, the keyword hook, performs the best, with west doing second best. Both cop and pay perform fairly poorly under this analysis. In real tests we have seen that hook and pay tend to perform the worst. This suggests that this methodology may not guarantee better results but should help. It is especially interesting to notice that the rank of each of the old keywords is very low. Where we are now selecting the top `r N_words` keywords, we had previously used the `r old_stats$rank` ranked out of 300 words.
 
 ```{r codec group, echo=FALSE}
 ### Group by Clip and Codec
