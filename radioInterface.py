@@ -76,10 +76,12 @@ class RadioInterface:
         #determine LED state string
         if(state):
             ststr='on'
-            print("state is on")
+            if(self.debug):
+                print("RadioInterface LED {%num} state is on")
         else:
             ststr='off'
-            print("state is off")
+            if(self.debug):
+                print("RadioInterface LED {%num} state is off")
         #send command
         self._command(f"LED {num} {ststr}")
         
