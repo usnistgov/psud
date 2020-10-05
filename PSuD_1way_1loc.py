@@ -13,6 +13,7 @@ class PSuD:
     def __init__(self):
         #set default values
         self.audioFiles=[]
+        self.audioPath=''
         self.overPlay=1.0
         self.trials=100
         self.blockSize=512
@@ -52,6 +53,9 @@ if __name__ == "__main__":
     parser.add_argument(
                         '-a', '--audioFiles', default=[],action="extend", nargs="+", type=str,metavar='FILENAME',
                         help='Path to audio files to use for test. Cutpoint files must also be present')
+    parser.add_argument(
+                        '-f', '--audioPath', default=test_obj.audioPath, type=str,
+                        help='Path to look for audio files in. All audio file paths are relative to this unless they are absolute')
     parser.add_argument('-t', '--trials', type=int, default=test_obj.trials,metavar='T',
                         help='Number of trials to use for test. Defaults to %(default)d')
     parser.add_argument("-r", "--radioport", default="",metavar='PORT',
