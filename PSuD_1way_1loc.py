@@ -58,7 +58,8 @@ class PSuD:
         self.bufSize=20
         self.ri=None
         self.info=None
-        self.fs=48e3;
+        self.fs=48e3
+        self.rng=np.random.default_rng()
         
     #load audio files for use in test
     def load(self):
@@ -96,6 +97,9 @@ class PSuD:
         #---------------------[Load Audio Files if Needed]---------------------
         if(not hasattr(self,'y')):
             self.load()
+        
+        #generate clip index
+        self.clipi=self.rng.permutation(100)%len(self.y)
         
         #-------------------[Find and Setup Audio interface]-------------------
         #-----------------------[Setup Files and folders]-----------------------
