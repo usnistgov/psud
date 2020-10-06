@@ -1,13 +1,51 @@
 #!/usr/bin/env python
 
 import argparse
-
+import os.path
+import scipy.io.wavfile
+import csv
+import numpy as np
 
 if __name__ == "__main__":
     from radioInterface import RadioInterface
     
+#read in cutpoints from file
+#TODO: move this to common library
+def load_cp(fname):
+    #field names for cutpoints
+    cp_fields=['Clip','Start','End']
+    #open cutpoints file
+    with open(fname,'rt') as csv_f:
+        #create dict reader
+        reader=csv.DictReader(csv_f)
+        #check for correct fieldnames
+        if(reader.fieldnames != cp_fields):
+            raise RuntimeError(f'Cutpoint columns do not match {cp_fields}')
+        #create empty list
+        cp=[]
+        #append each line
+        for row in reader:
+            #convert values to float
+            for k in row:
+                row[k]=float(row[k])
+            #append row to 
+            cp.append(row)
+        return tuple(cp)
+        
+#convert audio data to float type with standard scale        
+#TODO: move this to comon library
+def audio_float(dat):
+    if(dat.dtype is np.dtype('uint8')):
+        return (dat.astype('float')-128)/128
+    if(dat.dtype is np.dtype('int16')):
+        return dat.astype('float')/(2**15)
+    if(dat.dtype is np.dtype('int32')):
+        return dat.astype('float')/(2**31)
+    if(dat.dtype is np.dtype('float32')):
+        return dat    
 
-
+        
+        
 class PSuD:
     
     def __init__(self):
@@ -20,9 +58,45 @@ class PSuD:
         self.bufSize=20
         self.ri=None
         self.info=None
+        self.fs=48e3;
+        
+    #load audio files for use in test
+    def load(self):
+    
+        #check that audio files is not empty
+        if not self.audioFiles:
+            #TODO : is this the right error to use here??
+            raise ValueError('Expected self.audioFiles to not be empty')
+
+        #list for input speech
+        self.y=[]
+        #list for cutpoints
+        self.cutpoints=[]
+        
+        for f in self.audioFiles:
+            #make full path from relative paths
+            f_full=os.path.join(self.audioPath,f)
+            # load audio
+            fs_file, audio_dat = scipy.io.wavfile.read(f_full)
+            #check fs
+            if(fs_file != self.fs):
+                raise RuntimeError(f'Expected fs to be {self.fs} but got {fs_file} for {f}')
+            # Convert to float sound array and add to list
+            self.y.append( audio_float(audio_dat))
+            #strip extension from file
+            fne,_=os.path.splitext(f_full)
+            #add .csv extension
+            fcsv=fne+'.csv'
+            #load cutpoints
+            cp=load_cp(fcsv)
+            #add cutpoints to array
+            self.cutpoints.append(cp)
         
     def run(self):
-        #--------------------------[Load Audio Files]--------------------------
+        #---------------------[Load Audio Files if Needed]---------------------
+        if(not hasattr(self,'y')):
+            self.load()
+        
         #-------------------[Find and Setup Audio interface]-------------------
         #-----------------------[Setup Files and folders]-----------------------
         #---------------------------[write log entry]---------------------------
