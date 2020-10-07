@@ -27,7 +27,13 @@ def load_cp(fname):
         for row in reader:
             #convert values to float
             for k in row:
-                row[k]=float(row[k])
+                if(k=='Clip'):
+                    #float is needed to represent NaN
+                    row[k]=float(row[k])
+                else:
+                    #make indexes zero based
+                    row[k]=int(row[k])-1;
+                
             #append row to 
             cp.append(row)
         return tuple(cp)
