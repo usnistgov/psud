@@ -5,6 +5,7 @@ import os.path
 import scipy.io.wavfile
 import csv
 import numpy as np
+import datetime
 
 if __name__ == "__main__":
     from radioInterface import RadioInterface
@@ -62,6 +63,7 @@ class PSuD:
         self.trials=100
         self.blockSize=512
         self.bufSize=20
+        self.outdir=''
         self.ri=None
         self.info=None
         self.fs=48e3
@@ -108,7 +110,38 @@ class PSuD:
         self.clipi=self.rng.permutation(100)%len(self.y)
         
         #-------------------[Find and Setup Audio interface]-------------------
+        #-------------------------[Get Test Start Time]-------------------------
+        self.info['Tstart']=datetime.datetime.now()
+        dtn=self.info['Tstart'].strftime('%d-%b-%Y_%H-%M-%S')
         #-----------------------[Setup Files and folders]-----------------------
+        
+        #generate data dir names
+        data_dir=os.path.join(self.outdir,'data')
+        wav_data_dir=os.path.join(data_dir,'wav')
+        csv_data_dir=os.path.join(data_dir,'csv')
+        
+        
+        #create data directories 
+        os.makedirs(csv_data_dir, exist_ok=True)
+        os.makedirs(wav_data_dir, exist_ok=True)
+        
+        
+        #generate base file name to use for all files
+        base_filename='capture_%s_%s'%(self.info['Test Type'],dtn);
+        
+        #generate test dir names
+        wavdir=os.path.join(wav_data_dir,base_filename) 
+        
+        #get name of audio clip without path or extension
+        clip_names=[ os.path.basename(os.path.splitext(a)[0]) for a in self.audioFiles]
+
+        #get name of csv files with path and extension
+        self.data_filename=os.path.join(csv_data_dir,f'{base_filename}.csv')
+
+        #get name of temp csv files with path and extension
+        temp_data_filename = os.path.join(csv_data_dir,f'{base_filename}_TEMP.csv')
+
+        
         #---------------------------[write log entry]---------------------------
         
         #--------------------------[Measurement Loop]--------------------------
@@ -167,6 +200,11 @@ if __name__ == "__main__":
             setattr(test_obj,k,v)
             
     #------------------------------[Get test info]------------------------------
+    
+    #TESTING : put fake test info here for now
+    test_obj.info={}
+    test_obj.info['Test Type']='testing'
+    
     #---------------------------[Open RadioInterface]---------------------------
     
     with RadioInterface(args.radioport) as test_obj.ri:
