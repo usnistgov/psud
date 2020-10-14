@@ -147,6 +147,7 @@ class PSuD:
         #--------------------------[Measurement Loop]--------------------------
         for trial in range(self.trials):
             #-----------------------[Get Trial Timestamp]-----------------------
+            timestamp=datetime.datetime.now().strftime('%d-%b-%Y %H:%M:%S')
             #--------------------[Key Radio and play audio]--------------------
             #-----------------------[Pause Between runs]-----------------------
             #------------------------[calculate M2E]------------------------
