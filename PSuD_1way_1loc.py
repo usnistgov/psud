@@ -8,6 +8,7 @@ import numpy as np
 import datetime
 import shutil
 import time
+from ITS_delay_est import ITS_delay_est
 
 if __name__ == "__main__":
     from radioInterface import RadioInterface
@@ -206,7 +207,8 @@ class PSuD:
                 raise RuntimeError('Recorded sample rate does not match!')
                 
             #------------------------[calculate M2E]------------------------
-            delay=0
+            delay=estimated_m2e_latency = ITS_delay_est(self.y[clip_index], rec_dat, "f", fsamp=self.fs)[1] / self.fs
+            
             #---------------------[Compute intelligibility]---------------------
             success=num_keywords*(0,)
             #---------------------------[Write File]---------------------------
