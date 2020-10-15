@@ -7,6 +7,7 @@ import csv
 import numpy as np
 import datetime
 import shutil
+import time
 
 if __name__ == "__main__":
     from radioInterface import RadioInterface
@@ -68,6 +69,8 @@ class PSuD:
         self.ri=None
         self.info=None
         self.fs=48e3
+        self.ptt_wait=0.68
+        self.ptt_gap=3.1
         self.rng=np.random.default_rng()
         
     #load audio files for use in test
@@ -172,7 +175,20 @@ class PSuD:
             #-----------------------[Get Trial Timestamp]-----------------------
             ts=datetime.datetime.now().strftime('%d-%b-%Y %H:%M:%S')
             #--------------------[Key Radio and play audio]--------------------
+            
+            #push PTT
+            self.ri.ptt(True)
+            
+            #pause for access
+            time.sleep(self.ptt_wait)
+            
+            #play/record audio
+            
+            #un-push PTT
+            self.ri.ptt(False)
             #-----------------------[Pause Between runs]-----------------------
+            
+            time.sleep(self.ptt_gap)
             #------------------------[calculate M2E]------------------------
             delay=0
             #---------------------[Compute intelligibility]---------------------
@@ -220,7 +236,11 @@ if __name__ == "__main__":
                         ' in the system')
     parser.add_argument('-o', '--outdir', default='', metavar='DIR',
                         help='Directory that is added to the output path for all files')
-                            
+    parser.add_argument('-w', '--PTTWait', default=test_obj.ptt_wait, metavar='T',dest='ptt_wait',
+                        help='Time to wait between pushing PTT and playing audio')
+    parser.add_argument('-g', '--PTTGap', default=test_obj.ptt_gap, metavar='GAP',dest='ptt_gap',
+                        help='Time to pause between trials')
+                                                
                         
     #-----------------------------[Parse arguments]-----------------------------
 
