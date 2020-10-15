@@ -72,6 +72,7 @@ class PSuD:
         self.ptt_wait=0.68
         self.ptt_gap=3.1
         self.rng=np.random.default_rng()
+        self.play_record_func=None
         
     #load audio files for use in test
     def load(self):
@@ -145,6 +146,9 @@ class PSuD:
         #generate test dir names
         wavdir=os.path.join(wav_data_dir,base_filename) 
         
+        #create test dir
+        os.makedirs(wavdir, exist_ok=True)
+        
         #get name of audio clip without path or extension
         clip_names=[ os.path.basename(os.path.splitext(a)[0]) for a in self.audioFiles]
 
@@ -182,7 +186,14 @@ class PSuD:
             #pause for access
             time.sleep(self.ptt_wait)
             
+            clip_index=self.clipi[trial]
+            
+            #generate filename
+            clip_name=os.path.join(wavdir,f'Rx{trial}_{clip_names[clip_index]}.wav')
+            
             #play/record audio
+            self.play_record_func(self.y[clip_index],buffersize=self.bufSize, blocksize=self.blockSize,
+                out_name=clip_name,overPlay=self.overPlay)
             
             #un-push PTT
             self.ri.ptt(False)
