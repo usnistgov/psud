@@ -200,6 +200,11 @@ class PSuD:
             #-----------------------[Pause Between runs]-----------------------
             
             time.sleep(self.ptt_gap)
+            #---------------------[Load in recorded audio]---------------------
+            fs,rec_dat = scipy.io.wavfile.read(clip_name)
+            if(self.fs != fs):
+                raise RuntimeError('Recorded sample rate does not match!')
+                
             #------------------------[calculate M2E]------------------------
             delay=0
             #---------------------[Compute intelligibility]---------------------
