@@ -6,6 +6,7 @@ import scipy.io.wavfile
 import csv
 import numpy as np
 import datetime
+import shutil
 
 if __name__ == "__main__":
     from radioInterface import RadioInterface
@@ -109,6 +110,15 @@ class PSuD:
         #generate clip index
         self.clipi=self.rng.permutation(100)%len(self.y)
         
+        #number of keyword columns to have in the .csv file
+        num_keywords=0
+        #check cutpoints and count keywaords
+        for cp in self.cutpoints:
+            #count the number of actual keywords
+            n=sum(not np.isnan(w['Clip']) for w in cp)
+            #set num_keywords to max values
+            num_keywords=max(n,num_keywords)
+        
         #-------------------[Find and Setup Audio interface]-------------------
         #-------------------------[Get Test Start Time]-------------------------
         self.info['Tstart']=datetime.datetime.now()
@@ -144,17 +154,37 @@ class PSuD:
         
         #---------------------------[write log entry]---------------------------
         
+        #-------------------------[Generate csv header]-------------------------
+        header="Timestamp,Filename,m2e_latency,Over_runs,Under_runs"
+        dat_format="{timestamp},{name},{m2e},{overrun},{underrun}"
+        for word in range(num_keywords):
+            header+=f',W{word}_Int'
+            dat_format+=f',{{intel[{word}]}}'
+        #add newlines at the end
+        header+='\n'
+        dat_format+='\n'
+        
+        #-----------------------[write initial csv file]-----------------------
+        with open(temp_data_filename,'wt') as f:
+            f.write(header)
         #--------------------------[Measurement Loop]--------------------------
         for trial in range(self.trials):
             #-----------------------[Get Trial Timestamp]-----------------------
-            timestamp=datetime.datetime.now().strftime('%d-%b-%Y %H:%M:%S')
+            ts=datetime.datetime.now().strftime('%d-%b-%Y %H:%M:%S')
             #--------------------[Key Radio and play audio]--------------------
             #-----------------------[Pause Between runs]-----------------------
             #------------------------[calculate M2E]------------------------
+            delay=0
             #---------------------[Compute intelligibility]---------------------
-            #---------------------------[Write Files]---------------------------
-            pass
-
+            success=num_keywords*(0,)
+            #---------------------------[Write File]---------------------------
+            with open(temp_data_filename,'at') as f:
+                f.write(dat_format.format(timestamp=ts,name=clip_names[self.clipi[trial]],m2e=delay,intel=success,overrun=0,underrun=0))
+                
+        #-------------------------------[Cleanup]-------------------------------
+        
+        #move temp file to real file
+        shutil.move(temp_data_filename,self.data_filename)
 
 
 #main function 
