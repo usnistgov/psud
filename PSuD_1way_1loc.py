@@ -12,7 +12,7 @@ from scipy.interpolate import interp1d
 import scipy.io.wavfile as wav
 
 from ITS_delay_est import ITS_delay_est
-from ABC_MRT16 import ABC_MRT16
+from abcmrt import ABC_MRT16
 
 
 if __name__ == "__main__":
@@ -138,26 +138,29 @@ class PSuD:
         
     def run(self):
         #---------------------------[Set time expand]---------------------------
-        time_expand=self.time_expand
+        self.time_expand_samples=np.array(self.time_expand)
         
-        if(len(time_expand)==1):
+        if(len(self.time_expand_samples)==1):
             #make symmetric interval
-            time_expand=[time_expand,]*2
+            self.time_expand_samples=np.array([self.time_expand_samples,]*2)
+
+        #convert to samples
+        self.time_expand_samples=np.ceil(self.time_expand_samples*self.fs).astype(int)
         #---------------------[Load Audio Files if Needed]---------------------
         if(not hasattr(self,'y')):
             self.load()
         
         #generate clip index
-        self.clipi=self.rng.permutation(100)%len(self.y)
+        self.clipi=self.rng.permutation(self.trials)%len(self.y)
         
         #number of keyword columns to have in the .csv file
-        num_keywords=0
+        self.num_keywords=0
         #check cutpoints and count keywaords
         for cp in self.cutpoints:
             #count the number of actual keywords
             n=sum(not np.isnan(w['Clip']) for w in cp)
             #set num_keywords to max values
-            num_keywords=max(n,num_keywords)
+            self.num_keywords=max(n,self.num_keywords)
         
         #-------------------[Find and Setup Audio interface]-------------------
         #-------------------------[Get Test Start Time]-------------------------
@@ -205,7 +208,7 @@ class PSuD:
         #-------------------------[Generate csv header]-------------------------
         header="Timestamp,Filename,m2e_latency,Over_runs,Under_runs"
         dat_format="{timestamp},{name},{m2e},{overrun},{underrun}"
-        for word in range(num_keywords):
+        for word in range(self.num_keywords):
             header+=f',W{word}_Int'
             dat_format+=f',{{intel[{word}]}}'
         #add newlines at the end
@@ -259,41 +262,49 @@ class PSuD:
                         
             # apply function to non-offset time array to get rec_dat without latency
             rec_dat_no_latency = f(np.arange(len(self.y[clip_index])) / self.fs)
-
-            #----------------[Cut audio and perform time expand]----------------
-
-            #array of audio data for each word
-            word_audio=[]
-            #array of word numbers
-            word_num=[]
-            #maximum index
-            max_idx=len(rec_dat_no_latency)-1
             
-            for cpw in self.cutpoints[clip_index]:
-                if(not np.isnan(cpw['Clip'])):
-                    #calcualte start and end points
-                    start=int(np.clip(cpw['Start']-time_expand[0],0,max_idx))
-                    end  =int(np.clip(cpw['End']  +time_expand[1],0,max_idx))
-                    #add word audio to array
-                    word_audio.append(rec_dat_no_latency[start:end])
-                    #add word num to array
-                    word_num.append(cpw['Clip'])
-
             #---------------------[Compute intelligibility]---------------------
-            phi_hat,success=self.mrt.process(word_audio,word_num)
             
-            #expand success so len is num_keywords
-            success_pad=np.empty(num_keywords)
-            success_pad.fill(np.nan)
-            success_pad[:success.shape[0]]=success
+            success=self.compute_intellligibility(rec_dat_no_latency,self.cutpoints[clip_index])
+
             #---------------------------[Write File]---------------------------
             with open(temp_data_filename,'at') as f:
-                f.write(dat_format.format(timestamp=ts,name=clip_names[self.clipi[trial]],m2e=estimated_m2e_latency,intel=success_pad,overrun=0,underrun=0))
+                f.write(dat_format.format(timestamp=ts,name=clip_names[self.clipi[trial]],m2e=estimated_m2e_latency,intel=success,overrun=0,underrun=0))
                 
         #-------------------------------[Cleanup]-------------------------------
         
         #move temp file to real file
         shutil.move(temp_data_filename,self.data_filename)
+
+    def compute_intellligibility(self,audio,cutpoints):
+        #----------------[Cut audio and perform time expand]----------------
+
+        #array of audio data for each word
+        word_audio=[]
+        #array of word numbers
+        word_num=[]
+        #maximum index
+        max_idx=len(audio)-1
+        
+        for cpw in cutpoints:
+            if(not np.isnan(cpw['Clip'])):
+                #calcualte start and end points
+                start=np.clip(cpw['Start']-self.time_expand_samples[0],0,max_idx)
+                end  =np.clip(cpw['End']  +self.time_expand_samples[1],0,max_idx)
+                #add word audio to array
+                word_audio.append(audio[start:end])
+                #add word num to array
+                word_num.append(cpw['Clip'])
+
+        #---------------------[Compute intelligibility]---------------------
+        phi_hat,success=self.mrt.process(word_audio,word_num)
+        
+        #expand success so len is num_keywords
+        success_pad=np.empty(self.num_keywords)
+        success_pad.fill(np.nan)
+        success_pad[:success.shape[0]]=success
+        
+        return success_pad
 
 
 #main function 
