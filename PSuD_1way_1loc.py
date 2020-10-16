@@ -138,11 +138,13 @@ class PSuD:
         
     def run(self):
         #---------------------------[Set time expand]---------------------------
-        time_expand=self.time_expand
+        time_expand=np.array(self.time_expand)
         
         if(len(time_expand)==1):
             #make symmetric interval
-            time_expand=[time_expand,]*2
+            time_expand=np.array([time_expand,]*2)
+            
+        time_expand_samples=time_expand*self.fs
         #---------------------[Load Audio Files if Needed]---------------------
         if(not hasattr(self,'y')):
             self.load()
@@ -272,8 +274,8 @@ class PSuD:
             for cpw in self.cutpoints[clip_index]:
                 if(not np.isnan(cpw['Clip'])):
                     #calcualte start and end points
-                    start=int(np.clip(cpw['Start']-time_expand[0],0,max_idx))
-                    end  =int(np.clip(cpw['End']  +time_expand[1],0,max_idx))
+                    start=int(np.clip(cpw['Start']-time_expand_samples[0],0,max_idx))
+                    end  =int(np.clip(cpw['End']  +time_expand_samples[1],0,max_idx))
                     #add word audio to array
                     word_audio.append(rec_dat_no_latency[start:end])
                     #add word num to array
