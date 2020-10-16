@@ -2,3 +2,4 @@
 #python cache files
 *.pyc
 __pycache__/
+data/
