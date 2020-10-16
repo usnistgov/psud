@@ -8,7 +8,11 @@ import numpy as np
 import datetime
 import shutil
 import time
+from scipy.interpolate import interp1d
+
 from ITS_delay_est import ITS_delay_est
+from ABC_MRT16 import ABC_MRT16
+
 
 if __name__ == "__main__":
     from radioInterface import RadioInterface
@@ -74,6 +78,8 @@ class PSuD:
         self.ptt_gap=3.1
         self.rng=np.random.default_rng()
         self.play_record_func=None
+        self.mrt = ABC_MRT16()
+        self.time_expand=[100e-3 - 0.11e-3, 0.11e-3]
         
     #load audio files for use in test
     def load(self):
@@ -108,6 +114,12 @@ class PSuD:
             self.cutpoints.append(cp)
         
     def run(self):
+        #---------------------------[Set time expand]---------------------------
+        time_expand=self.time_expand
+        
+        if(len(time_expand)==1):
+            #make symmetric interval
+            time_expand=[time_expand,]*2
         #---------------------[Load Audio Files if Needed]---------------------
         if(not hasattr(self,'y')):
             self.load()
@@ -207,13 +219,48 @@ class PSuD:
                 raise RuntimeError('Recorded sample rate does not match!')
                 
             #------------------------[calculate M2E]------------------------
-            delay=estimated_m2e_latency = ITS_delay_est(self.y[clip_index], rec_dat, "f", fsamp=self.fs)[1] / self.fs
+            estimated_m2e_latency = ITS_delay_est(self.y[clip_index], rec_dat, "f", fsamp=self.fs)[1] / self.fs
+
+            #---------------------------[align audio]---------------------------
+
+            # create time array for the rx_signal and offest it by the calculated delay
+            points = np.arange(len(rec_dat)) / self.fs - estimated_m2e_latency
+
+            # create interpolation function based on offsetted time array
+            f = interp1d(points, rec_dat, fill_value=np.nan)
+                        
+            # apply function to non-offset time array to get rec_dat without latency
+            rec_dat_no_latency = f(np.arange(len(self.y[clip_index])) / self.fs)
+
+            #----------------[Cut audio and perform time expand]----------------
+
+            #array of audio data for each word
+            word_audio=[]
+            #array of word numbers
+            word_num=[]
+            #maximum index
+            max_idx=len(rec_dat_no_latency)-1
             
+            for cpw in self.cutpoints[clip_index]:
+                if(not np.isnan(cpw['Clip'])):
+                    #calcualte start and end points
+                    start=int(np.clip(cpw['Start']-time_expand[0],0,max_idx))
+                    end  =int(np.clip(cpw['End']  +time_expand[1],0,max_idx))
+                    #add word audio to array
+                    word_audio.append(rec_dat_no_latency[start:end])
+                    #add word num to array
+                    word_num.append(cpw['Clip'])
+
             #---------------------[Compute intelligibility]---------------------
-            success=num_keywords*(0,)
+            phi_hat,success=self.mrt.process(word_audio,word_num)
+            
+            #expand success so len is num_keywords
+            success_pad=np.empty(num_keywords)
+            success_pad.fill(np.nan)
+            success_pad[:success.shape[0]]=success
             #---------------------------[Write File]---------------------------
             with open(temp_data_filename,'at') as f:
-                f.write(dat_format.format(timestamp=ts,name=clip_names[self.clipi[trial]],m2e=delay,intel=success,overrun=0,underrun=0))
+                f.write(dat_format.format(timestamp=ts,name=clip_names[self.clipi[trial]],m2e=estimated_m2e_latency,intel=success_pad,overrun=0,underrun=0))
                 
         #-------------------------------[Cleanup]-------------------------------
         
