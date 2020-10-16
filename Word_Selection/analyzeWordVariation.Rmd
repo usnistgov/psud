@@ -41,7 +41,7 @@ if(laptop){
 } else{
   mcv_name = "MCV"
 }
-setwd(file.path("D:",mcv_name,"PAR"))
+setwd(file.path("D:",mcv_name,"psud","Word_Selection"))
 
 ```
 
@@ -476,7 +476,32 @@ access_selected_clips <- as.data.frame(bind_cols(lapply(access_top_unique,functi
 access_selected_clips <- access_selected_clips[,talkers]
 knitr::kable(access_selected_clips)
 
+get_keywords <- function(clips,wordList){
+  clips <- as.character(clips)
+  clip_parts <- strsplit(clips,"_")
+  batches_str<-sapply(clip_parts,function(x){x[2]})
+  batches <- as.numeric(gsub("b","",batches_str))
+  words_str <- sapply(clip_parts,function(x){x[3]})
+  words <- as.numeric(gsub("w","",words_str))
+  keywords<- c()
+  for(ix in 1:length(clips)){
+    kw <- as.character(wordList[batches[ix],words[ix]])
+    keywords <- c(keywords,kw)
+  }
+  return(keywords)
+}
 
+get_access_clip_name <- function(access_clips,wordList){
+  access_clips <- as.character(access_clips)
+  access_kw <- get_keywords(access_clips,wordList)
+  
+  access_names <- mapply(function(k,c){gsub("orig",k,c)},access_kw,access_clips)
+  return(access_names)
+}
+
+access_clip_names <- sapply(access_selected_clips,get_access_clip_name,wordList)
+
+write.csv(access_clip_names,"salt4Jesse.csv",row.names = FALSE)
 ```
 
 ### Additional Plots
