@@ -9,6 +9,7 @@ import datetime
 import shutil
 import time
 from scipy.interpolate import interp1d
+import scipy.io.wavfile as wav
 
 from ITS_delay_est import ITS_delay_est
 from ABC_MRT16 import ABC_MRT16
@@ -48,6 +49,25 @@ def load_cp(fname):
             #append row to 
             cp.append(row)
         return tuple(cp)
+     
+#write cutpoints to file
+#TODO: move this to common library   
+def write_cp(fname,cutpoints):
+    #field names for cutpoints
+    cp_fields=['Clip','Start','End']
+    #open cutpoints file
+    with open(fname,'wt',newline='\n', encoding='utf-8') as csv_f:
+        #create dict writer
+        writer=csv.DictWriter(csv_f, fieldnames=cp_fields)
+        #write header row
+        writer.writeheader()
+        #write each row
+        for wcp in cutpoints:
+            #convert back to 1 based index
+            wcp['Start']+=1
+            wcp['End']+=1
+            #write each row
+            writer.writerow(wcp)
         
 #convert audio data to float type with standard scale        
 #TODO: move this to comon library
@@ -174,7 +194,12 @@ class PSuD:
         #get name of temp csv files with path and extension
         temp_data_filename = os.path.join(csv_data_dir,f'{base_filename}_TEMP.csv')
 
-        
+        #write out Tx clips and cutpoints to files
+        for dat,name,cp in zip(self.y,clip_names,self.cutpoints):
+            out_name=os.path.join(wavdir,f'Tx_{name}')
+            wav.write(out_name+'.wav', int(self.fs), dat)
+            write_cp(out_name+'.csv',cp)
+            
         #---------------------------[write log entry]---------------------------
         
         #-------------------------[Generate csv header]-------------------------
