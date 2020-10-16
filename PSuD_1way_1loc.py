@@ -151,7 +151,7 @@ class PSuD:
             self.load()
         
         #generate clip index
-        self.clipi=self.rng.permutation(100)%len(self.y)
+        self.clipi=self.rng.permutation(self.trials)%len(self.y)
         
         #number of keyword columns to have in the .csv file
         self.num_keywords=0
