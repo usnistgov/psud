@@ -12,7 +12,7 @@ from scipy.interpolate import interp1d
 import scipy.io.wavfile as wav
 
 from ITS_delay_est import ITS_delay_est
-from ABC_MRT16 import ABC_MRT16
+from abcmrt import ABC_MRT16
 
 
 if __name__ == "__main__":
