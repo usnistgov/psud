@@ -38,6 +38,9 @@ def load_cp(fname):
                 if(k=='Clip'):
                     #float is needed to represent NaN
                     row[k]=float(row[k])
+                    #convert non nan fields to int
+                    if(not np.isnan(row[k])):
+                        row[k]=int(row[k])
                 else:
                     #make indexes zero based
                     row[k]=int(row[k])-1;
