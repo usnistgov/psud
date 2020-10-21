@@ -245,7 +245,7 @@ class PSuD:
             clip_index=self.clipi[trial]
             
             #generate filename
-            clip_name=os.path.join(wavdir,f'Rx{trial}_{clip_names[clip_index]}.wav')
+            clip_name=os.path.join(wavdir,f'Rx{trial+1}_{clip_names[clip_index]}.wav')
             
             #play/record audio
             self.play_record_func(self.y[clip_index],buffersize=self.bufSize, blocksize=self.blockSize,
