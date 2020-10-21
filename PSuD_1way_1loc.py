@@ -81,6 +81,18 @@ def audio_float(dat):
     if(dat.dtype is np.dtype('float32')):
         return dat    
 
+#offset rx audio so that M2E latency is removed
+#TODO : maybe this should be in a comon library?
+def align_audio(tx,rx,m2e_latency,fs):
+    # create time array for the rx_signal and offest it by the calculated delay
+    points = np.arange(len(rx)) / fs - m2e_latency
+
+    # create interpolation function based on offsetted time array
+    f = interp1d(points, rx, fill_value=np.nan)
+                
+    # apply function to non-offset time array to get rec_dat without latency
+    return f(np.arange(len(tx)) / fs)
+
         
         
 class PSuD:
@@ -253,15 +265,8 @@ class PSuD:
             estimated_m2e_latency = ITS_delay_est(self.y[clip_index], rec_dat, "f", fsamp=self.fs)[1] / self.fs
 
             #---------------------------[align audio]---------------------------
-
-            # create time array for the rx_signal and offest it by the calculated delay
-            points = np.arange(len(rec_dat)) / self.fs - estimated_m2e_latency
-
-            # create interpolation function based on offsetted time array
-            f = interp1d(points, rec_dat, fill_value=np.nan)
-                        
-            # apply function to non-offset time array to get rec_dat without latency
-            rec_dat_no_latency = f(np.arange(len(self.y[clip_index])) / self.fs)
+            
+            rec_dat_no_latency = align_audio(self.y[clip_index],rec_dat,estimated_m2e_latency,self.fs)
             
             #---------------------[Compute intelligibility]---------------------
             
