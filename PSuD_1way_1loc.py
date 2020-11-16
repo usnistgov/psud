@@ -79,7 +79,11 @@ def audio_float(dat):
     if(dat.dtype is np.dtype('int32')):
         return dat.astype('float')/(2**31)
     if(dat.dtype is np.dtype('float32')):
+        return dat 
+    if(dat.dtype is np.dtype('float64')):
         return dat    
+    else:
+        raise RuntimeError(f'unknown audio type \'{dat.dtype}\'')
 
 #offset rx audio so that M2E latency is removed
 #TODO : maybe this should be in a comon library?
