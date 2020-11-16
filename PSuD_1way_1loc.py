@@ -101,6 +101,8 @@ def align_audio(tx,rx,m2e_latency,fs):
         
 class PSuD:
     
+    data_fields=("Timestamp","Filename","m2e_latency","Over_runs","Under_runs")
+    
     def __init__(self):
         #set default values
         self.audioFiles=[]
@@ -222,7 +224,7 @@ class PSuD:
         #---------------------------[write log entry]---------------------------
         
         #-------------------------[Generate csv header]-------------------------
-        header="Timestamp,Filename,m2e_latency,Over_runs,Under_runs"
+        header=','.join(self.data_fields)
         dat_format="{timestamp},{name},{m2e},{overrun},{underrun}"
         for word in range(self.num_keywords):
             header+=f',W{word}_Int'
