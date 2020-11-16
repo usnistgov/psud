@@ -3,11 +3,8 @@
 import argparse
 import os.path
 import scipy.io.wavfile as wav
-import csv
 import numpy as np
-import datetime
 import shutil
-import time
 from PSuD_1way_1loc import PSuD as PSuD
 
 class QoEsim:
