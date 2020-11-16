@@ -121,7 +121,7 @@ class PSuD:
         self.time_expand=[100e-3 - 0.11e-3, 0.11e-3]
         
     #load audio files for use in test
-    def load(self):
+    def load_audio(self):
     
         #check that audio files is not empty
         if not self.audioFiles:
@@ -164,7 +164,7 @@ class PSuD:
         self.time_expand_samples=np.ceil(self.time_expand_samples*self.fs).astype(int)
         #---------------------[Load Audio Files if Needed]---------------------
         if(not hasattr(self,'y')):
-            self.load()
+            self.load_audio()
         
         #generate clip index
         self.clipi=self.rng.permutation(self.trials)%len(self.y)
