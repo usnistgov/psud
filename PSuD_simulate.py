@@ -274,6 +274,10 @@ if __name__ == "__main__":
                         help='The number of seconds to play silence after the audio is complete'+
                         '. This allows for all of the audio to be recorded when there is delay'+
                         ' in the system')
+    parser.add_argument('-x', '--time-expand', type=float, default=test_obj.time_expand,metavar='DUR',dest='time_expand',nargs='+',
+                        help='Time in seconds of audio to add before and after keywords before '+
+                        'sending them to ABC_MRT. Can be one value for a symmetric expansion or '+
+                        'two values for an asymmetric expansion')
     parser.add_argument('-o', '--outdir', default='', metavar='DIR',
                         help='Directory that is added to the output path for all files')
                                                 
@@ -281,6 +285,10 @@ if __name__ == "__main__":
     #-----------------------------[Parse arguments]-----------------------------
 
     args = parser.parse_args()
+    
+    #check that time expand is not too long
+    if(len(args.time_expand)>2):
+        raise ValueError('argument --time-expand takes only one or two arguments')
     
     #set object properties that exist
     for k,v in vars(args).items():

@@ -153,10 +153,9 @@ class PSuD:
             cp=load_cp(fcsv)
             #add cutpoints to array
             self.cutpoints.append(cp)
-        
-    def run(self):
-        #---------------------------[Set time expand]---------------------------
-        self.time_expand_samples=np.array(self.time_expand)
+            
+    def set_time_expand(self,t_ex):
+        self.time_expand_samples=np.array(t_ex)
         
         if(len(self.time_expand_samples)==1):
             #make symmetric interval
@@ -164,13 +163,8 @@ class PSuD:
 
         #convert to samples
         self.time_expand_samples=np.ceil(self.time_expand_samples*self.fs).astype(int)
-        #---------------------[Load Audio Files if Needed]---------------------
-        if(not hasattr(self,'y')):
-            self.load_audio()
         
-        #generate clip index
-        self.clipi=self.rng.permutation(self.trials)%len(self.y)
-        
+    def audio_clip_check(self):
         #number of keyword columns to have in the .csv file
         self.num_keywords=0
         #check cutpoints and count keywaords
@@ -179,6 +173,30 @@ class PSuD:
             n=sum(not np.isnan(w['Clip']) for w in cp)
             #set num_keywords to max values
             self.num_keywords=max(n,self.num_keywords)
+            
+    def csv_header_fmt(self):
+        hdr=','.join(self.data_fields)
+        fmt="{timestamp},{name},{m2e},{overrun},{underrun}"
+        for word in range(self.num_keywords):
+            hdr+=f',W{word}_Int'
+            fmt+=f',{{intel[{word}]}}'
+        #add newlines at the end
+        hdr+='\n'
+        fmt+='\n'
+        
+        return (hdr,fmt)
+    
+    def run(self):
+        #---------------------------[Set time expand]---------------------------
+        self.set_time_expand(self.time_expand)
+        #---------------------[Load Audio Files if Needed]---------------------
+        if(not hasattr(self,'y')):
+            self.load_audio()
+        
+        #generate clip index
+        self.clipi=self.rng.permutation(self.trials)%len(self.y)
+        
+        self.audio_clip_check()
         
         #-------------------[Find and Setup Audio interface]-------------------
         #-------------------------[Get Test Start Time]-------------------------
@@ -224,14 +242,8 @@ class PSuD:
         #---------------------------[write log entry]---------------------------
         
         #-------------------------[Generate csv header]-------------------------
-        header=','.join(self.data_fields)
-        dat_format="{timestamp},{name},{m2e},{overrun},{underrun}"
-        for word in range(self.num_keywords):
-            header+=f',W{word}_Int'
-            dat_format+=f',{{intel[{word}]}}'
-        #add newlines at the end
-        header+='\n'
-        dat_format+='\n'
+        
+        header,dat_format=self.csv_header_fmt()
         
         #-----------------------[write initial csv file]-----------------------
         with open(temp_data_filename,'wt') as f:
@@ -316,6 +328,73 @@ class PSuD:
         success_pad[:success.shape[0]]=success
         
         return success_pad
+        
+    def load_test_data(self,fname):
+            
+        with open(fname,'rt') as csv_f:
+            #create dict reader
+            reader=csv.DictReader(csv_f)
+            #check for correct fieldnames
+            for n,field in enumerate(reader.fieldnames):
+                if(n<len(self.data_fields)):
+                    #standard column
+                    expected_field=self.data_fields[n]
+                else:
+                    #word column
+                    expected_field=f'W{n-len(self.data_fields)}_Int'
+                #check for a match
+                if(field!=expected_field):
+                    raise RuntimeError(f'Got \'{field}\' for column name but expected \'{expected_field}\'')
+            #create empty list
+            data=[]
+            #create set for audio clips
+            clips=set()
+            for row in reader:
+                #convert values to float
+                for k in row:
+                    #check for timestamp field
+                    if(k==self.data_fields[0]):
+                        #convert to datetime object
+                        #well this fails for some reason, I guess a string is not horrible...
+                        #TODO : figure out how to fix this
+                        #row[k]=datetime.datetime.strptime(row[k],'%d-%b-%Y_%H-%M-%S')
+                        pass
+                    #check for clip name field
+                    elif(k==self.data_fields[1]):
+                        clips.add(row[k])
+                    else:
+                        #convert to float
+                        row[k]=float(row[k]);
+                    
+                #append row to 
+                data.append(row)
+        
+        #set audio file names to Tx file names
+        self.audioFiles=['Tx_'+name+'.wav' for name in clips]
+        
+        dat_name,_=os.path.splitext(os.path.basename(fname))
+        
+        #set audioPath based on filename
+        self.audioPath=os.path.join(os.path.dirname(os.path.dirname(fname)),'wav',dat_name)
+        
+        #load audio data from files
+        self.load_audio()
+        self.audio_clip_check()
+        
+        return data
+        
+    #get the clip index given a partial clip name
+    def find_clip_index(self,name):
+        #get all matching indicies
+        match=[idx for idx,clip in enumerate(self.audioFiles) if name in clip]
+        #check that a match was found
+        if(not match):
+            raise RuntimeError(f'no audio clips found matching \'{name}\' found in {self.audioFiles}')
+        #check that only one match was found
+        if(len(match)!=1):
+            raise RuntimeError(f'multiple audio clips found matching \'{name}\' found in {self.audioFiles}')
+        #return matching index
+        return match[0]
 
 
 #main function 
@@ -349,6 +428,10 @@ if __name__ == "__main__":
                         help='The number of seconds to play silence after the audio is complete'+
                         '. This allows for all of the audio to be recorded when there is delay'+
                         ' in the system')
+    parser.add_argument('-x', '--time-expand', type=float, default=test_obj.time_expand,metavar='DUR',dest='time_expand',nargs='+',
+                        help='Time in seconds of audio to add before and after keywords before '+
+                        'sending them to ABC_MRT. Can be one value for a symmetric expansion or '+
+                        'two values for an asymmetric expansion')
     parser.add_argument('-o', '--outdir', default='', metavar='DIR',
                         help='Directory that is added to the output path for all files')
     parser.add_argument('-w', '--PTTWait', default=test_obj.ptt_wait, metavar='T',dest='ptt_wait',
@@ -360,6 +443,10 @@ if __name__ == "__main__":
     #-----------------------------[Parse arguments]-----------------------------
 
     args = parser.parse_args()
+    
+    #check that time expand is not too long
+    if(len(args.time_expand)>2):
+        raise ValueError('argument --time-expand takes only one or two arguments')
     
     #set object properties that exist
     for k,v in vars(args).items():
