@@ -10,6 +10,7 @@ import shutil
 import time
 from scipy.interpolate import interp1d
 import scipy.io.wavfile as wav
+import warnings
 
 from ITS_delay_est import ITS_delay_est
 from abcmrt import ABC_MRT16
@@ -93,9 +94,17 @@ def align_audio(tx,rx,m2e_latency,fs):
 
     # create interpolation function based on offsetted time array
     f = interp1d(points, rx, fill_value=np.nan)
-                
-    # apply function to non-offset time array to get rec_dat without latency
-    return f(np.arange(len(tx)) / fs)
+    
+    try:
+        # apply function to non-offset time array to get rec_dat without latency
+        aligned=f(np.arange(len(tx)) / fs)
+    except ValueError as err:
+        #TODO : there is probably a better fix for this but just return rx data with no shift and give a warning
+        warnings.warn(f'Problem during time alignment \'{str(err)}\' returning data with no shift',RuntimeWarning)
+        #there was a problem with try our best...
+        aligned=rx[:len(tx)]
+        
+    return aligned
 
         
         
