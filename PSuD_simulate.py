@@ -15,6 +15,9 @@ class QoEsim:
         self.LED_state=[False,]*2
         self.ptt_wait_delay=[-1.0,]*2
         self.chanel_tech='clean'
+        self.pre_impairment=None
+        self.post_impairment=None
+        self.channel_impairment=None
         #TODO : set based on tech
         self.m2e_latency=21.1e-3
         self.fs=48e3
@@ -129,8 +132,17 @@ class QoEsim:
         
     # =====================[audio channel simulation function]=====================
     def simulate_audio_channel(self,tx_data):
+        
+        #add pre channel impairments
+        if(self.pre_impairment):
+            tx_dat=self.pre_impairment(tx_data,self.fs)
+    
         # for a clean vocoder, write the rx signal as is
         if self.chanel_tech == "clean":
+            
+            if(self.channel_impairment):
+                warnings.warn('There is no channel for the \'clean\' option. can not use channel_impairment')
+            
             rx_data = tx_data
         
         elif self.chanel_tech == "analog":
@@ -138,8 +150,13 @@ class QoEsim:
             pass
         
         elif self.chanel_tech == "p25":
-            temp = p25encode(tx_data, self.fs)
-            rx_data = p25decode(temp, self.fs)
+            channel_data = p25encode(tx_data, self.fs)
+            
+            #apply channel impairments
+            if(self.channel_impairment):
+                channel_data=self.channel_impairment(channel_data)
+            
+            rx_data = p25decode(channel_data, self.fs)
         
         # simulate passing the signal thru an LTE vocoder by using ffmpeg
         elif self.chanel_tech == "lte":
@@ -166,6 +183,14 @@ class QoEsim:
                 % (temp_wav, temp_amr),
                 shell=True,
             )
+            
+            #apply channel impairments
+            if(self.channel_impairment):
+                #TODOD : load channel data
+                channel_data=self.channel_impairment(channel_data)
+                #TODOD : write channel data
+                
+            
             # convert temp amr file back to wav, and resample to original sample rate
             subprocess.run(
                 "ffmpeg -hide_banner -loglevel panic -channel_layout mono -codec amr_wb -i %s -ar %d -y %s"
@@ -175,6 +200,11 @@ class QoEsim:
             # read data from new rx wav file
             _, rx_data = wav.read(rx_file)
         
+        
+        #add post channel impairments
+        if(self.post_impairment):
+            rx_dat=self.post_impairment(rx_data,self.fs)
+    
         return rx_data
 
     # =====================[record audio function]=====================
