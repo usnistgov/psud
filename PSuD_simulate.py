@@ -6,6 +6,7 @@ import scipy.io.wavfile as wav
 import numpy as np
 import shutil
 from PSuD_1way_1loc import PSuD as PSuD
+import Probabilityiser
 
 class QoEsim:
     def __init__(self,port=None,debug=False):
@@ -310,6 +311,18 @@ if __name__ == "__main__":
                         'two values for an asymmetric expansion')
     parser.add_argument('-o', '--outdir', default='', metavar='DIR',
                         help='Directory that is added to the output path for all files')
+    parser.add_argument('-P','--use-probabilityiser', default=False,dest='use_probabilityiser',action='store_true',
+                        help='Use probabilityiesr to make channel "flaky"')
+    parser.add_argument('--no-use-probabilityiser',dest='use_probabilityiser',action='store_false',
+                        help='don\'t use probabilityiesr')
+    parser.add_argument('--P-a1',dest='P_a1',type=float,default=1,
+                        help='P_a1 for probabilityiesr')
+    parser.add_argument('--P-a2',dest='P_a2',type=float,default=1,
+                        help='P_a2 for probabilityiesr')
+    parser.add_argument('--P-r',dest='P_r',type=float,default=1,
+                        help='P_r for probabilityiesr')
+    parser.add_argument('--P-interval',dest='pInterval',type=float,default=1,
+                        help='Time interval for probabilityiesr in seconds')
                                                 
                         
     #-----------------------------[Parse arguments]-----------------------------
@@ -325,6 +338,18 @@ if __name__ == "__main__":
         if hasattr(test_obj,k):
             setattr(test_obj,k,v)
             
+    #---------------------------[add probabilityiesr]---------------------------
+    
+    if(args.use_probabilityiser):
+        prob=Probabilityiser.PBI()
+        
+        prob.P_a1=args.P_a1
+        prob.P_a2=args.P_a2
+        prob.P_r=args.P_r
+        prob.interval=args.pInterval
+        
+        sim_obj.pre_impairment=prob.process_audio
+        
     #------------------------------[Get test info]------------------------------
     
     #TESTING : put fake test info here for now
