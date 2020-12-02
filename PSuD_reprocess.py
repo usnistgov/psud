@@ -8,7 +8,7 @@ import scipy.io.wavfile
 import csv
 import sys
 
-from ITS_delay_est import ITS_delay_est
+import mcvqoe
 
 def reprocess(datafile,outfile=None,test_obj=None):
     #---------------------[Create Test object if not given]---------------------
@@ -51,7 +51,7 @@ def reprocess(datafile,outfile=None,test_obj=None):
                 raise RuntimeError('Recorded sample rate does not match!')
                 
             #------------------------[calculate M2E]------------------------
-            estimated_m2e_latency = ITS_delay_est(test_obj.y[clip_index], rec_dat, "f", fsamp=test_obj.fs)[1] / test_obj.fs
+            estimated_m2e_latency = mcvqoe.ITS_delay_est(test_obj.y[clip_index], rec_dat, "f", fsamp=test_obj.fs)[1] / test_obj.fs
 
             #---------------------------[align audio]---------------------------
             

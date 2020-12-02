@@ -12,7 +12,7 @@ from scipy.interpolate import interp1d
 import scipy.io.wavfile as wav
 import warnings
 
-from ITS_delay_est import ITS_delay_est
+import mcvqoe
 from abcmrt import ABC_MRT16
 
 
@@ -289,7 +289,7 @@ class PSuD:
                 raise RuntimeError('Recorded sample rate does not match!')
                 
             #------------------------[calculate M2E]------------------------
-            estimated_m2e_latency = ITS_delay_est(self.y[clip_index], rec_dat, "f", fsamp=self.fs)[1] / self.fs
+            estimated_m2e_latency = mcvqoe.ITS_delay_est(self.y[clip_index], rec_dat, "f", fsamp=self.fs)[1] / self.fs
 
             #---------------------------[align audio]---------------------------
             
