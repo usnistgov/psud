@@ -3,7 +3,6 @@
 import argparse
 import os.path
 import scipy.io.wavfile
-import csv
 import numpy as np
 import datetime
 import shutil
@@ -18,57 +17,7 @@ from abcmrt import ABC_MRT16
 
 if __name__ == "__main__":
     from radioInterface import RadioInterface
-    
-#read in cutpoints from file
-#TODO: move this to common library
-def load_cp(fname):
-    #field names for cutpoints
-    cp_fields=['Clip','Start','End']
-    #open cutpoints file
-    with open(fname,'rt') as csv_f:
-        #create dict reader
-        reader=csv.DictReader(csv_f)
-        #check for correct fieldnames
-        if(reader.fieldnames != cp_fields):
-            raise RuntimeError(f'Cutpoint columns do not match {cp_fields}')
-        #create empty list
-        cp=[]
-        #append each line
-        for row in reader:
-            #convert values to float
-            for k in row:
-                if(k=='Clip'):
-                    #float is needed to represent NaN
-                    row[k]=float(row[k])
-                    #convert non nan fields to int
-                    if(not np.isnan(row[k])):
-                        row[k]=int(row[k])
-                else:
-                    #make indexes zero based
-                    row[k]=int(row[k])-1;
-                
-            #append row to 
-            cp.append(row)
-        return tuple(cp)
-     
-#write cutpoints to file
-#TODO: move this to common library   
-def write_cp(fname,cutpoints):
-    #field names for cutpoints
-    cp_fields=['Clip','Start','End']
-    #open cutpoints file
-    with open(fname,'wt',newline='\n', encoding='utf-8') as csv_f:
-        #create dict writer
-        writer=csv.DictWriter(csv_f, fieldnames=cp_fields)
-        #write header row
-        writer.writeheader()
-        #write each row
-        for wcp in cutpoints:
-            #convert back to 1 based index
-            wcp['Start']+=1
-            wcp['End']+=1
-            #write each row
-            writer.writerow(wcp)
+
 
 #offset rx audio so that M2E latency is removed
 #TODO : maybe this should be in a comon library?
@@ -143,7 +92,7 @@ class PSuD:
             #add .csv extension
             fcsv=fne+'.csv'
             #load cutpoints
-            cp=load_cp(fcsv)
+            cp=mcvqoe.load_cp(fcsv)
             #add cutpoints to array
             self.cutpoints.append(cp)
             
@@ -230,7 +179,7 @@ class PSuD:
         for dat,name,cp in zip(self.y,clip_names,self.cutpoints):
             out_name=os.path.join(wavdir,f'Tx_{name}')
             wav.write(out_name+'.wav', int(self.fs), dat)
-            write_cp(out_name+'.csv',cp)
+            mcvqoe.write_cp(out_name+'.csv',cp)
             
         #---------------------------[write log entry]---------------------------
         
