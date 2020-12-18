@@ -222,15 +222,24 @@ class PSuD:
                 raise RuntimeError('Recorded sample rate does not match!')
                 
             #------------------------[calculate M2E]------------------------
-            estimated_m2e_latency = mcvqoe.ITS_delay_est(self.y[clip_index], rec_dat, "f", fsamp=self.fs)[1] / self.fs
+            dly_res = mcvqoe.ITS_delay_est(self.y[clip_index], rec_dat, "f", fsamp=self.fs,min_corr=0.8)
+            
+            if(not np.any(dly_res)):
+                #bad M2E, everything sucks, no info
+                estimated_m2e_latency=None
+                success=np.empty(self.num_keywords)
+                success.fill(None)
+            else:
+            
+                estimated_m2e_latency=dly_res[1] / self.fs
 
             #---------------------------[align audio]---------------------------
             
-            rec_dat_no_latency = align_audio(self.y[clip_index],rec_dat,estimated_m2e_latency,self.fs)
-            
+                rec_dat_no_latency = align_audio(self.y[clip_index],rec_dat,estimated_m2e_latency,self.fs)
+                
             #---------------------[Compute intelligibility]---------------------
             
-            success=self.compute_intellligibility(rec_dat_no_latency,self.cutpoints[clip_index])
+                success=self.compute_intellligibility(rec_dat_no_latency,self.cutpoints[clip_index])
 
             #---------------------------[Write File]---------------------------
             with open(temp_data_filename,'at') as f:
