@@ -63,6 +63,7 @@ class PSuD:
         self.play_record_func=None
         self.mrt = ABC_MRT16()
         self.time_expand=[100e-3 - 0.11e-3, 0.11e-3]
+        self.m2e_min_corr=0.76
         
     #load audio files for use in test
     def load_audio(self):
@@ -222,7 +223,7 @@ class PSuD:
                 raise RuntimeError('Recorded sample rate does not match!')
                 
             #------------------------[calculate M2E]------------------------
-            dly_res = mcvqoe.ITS_delay_est(self.y[clip_index], rec_dat, "f", fsamp=self.fs,min_corr=0.8)
+            dly_res = mcvqoe.ITS_delay_est(self.y[clip_index], rec_dat, "f", fsamp=self.fs,min_corr=self.m2e_min_corr)
             
             if(not np.any(dly_res)):
                 #bad M2E, everything sucks, no info
@@ -389,6 +390,8 @@ if __name__ == "__main__":
                         help='Time to wait between pushing PTT and playing audio')
     parser.add_argument('-g', '--PTTGap', default=test_obj.ptt_gap, metavar='GAP',dest='ptt_gap',
                         help='Time to pause between trials')
+    parser.add_argument('--m2e-min-corr', default=test_obj.m2e_min_corr, metavar='C',dest='m2e_min_corr',
+                        help='Minimum correlation value for acceptable mouth 2 ear measurement (default: %(default)0.2f)')
                                                 
                         
     #-----------------------------[Parse arguments]-----------------------------
