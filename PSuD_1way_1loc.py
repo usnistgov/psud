@@ -418,9 +418,6 @@ if __name__ == "__main__":
             
     #------------------------------[Get test info]------------------------------
     
-    #TESTING : put fake test info here for now
-    test_obj.info={}
-    
     test_obj.info=mcvqoe.pretest(args.outdir)
     
     #---------------------------[Open RadioInterface]---------------------------
