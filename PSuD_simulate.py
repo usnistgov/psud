@@ -104,6 +104,9 @@ if __name__ == "__main__":
     test_obj.info={}
     test_obj.info['Test Type']='testing'
     
+    test_obj.info=mcvqoe.pretest(args.outdir,ri=sim_obj)
+    
+    
     #--------------------------------[Run Test]--------------------------------
     test_obj.run()
     #TESTING : print out all class properties

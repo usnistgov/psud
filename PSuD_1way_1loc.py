@@ -44,6 +44,7 @@ def align_audio(tx,rx,m2e_latency,fs):
 class PSuD:
     
     data_fields=("Timestamp","Filename","m2e_latency","Over_runs","Under_runs")
+    no_log=('y','clipi','data_dir','wav_data_dir','csv_data_dir','cutpoints','data_fields','time_expand_samples','num_keywords')
     
     def __init__(self):
         #set default values
@@ -145,6 +146,12 @@ class PSuD:
         #-------------------------[Get Test Start Time]-------------------------
         self.info['Tstart']=datetime.datetime.now()
         dtn=self.info['Tstart'].strftime('%d-%b-%Y_%H-%M-%S')
+        
+        #--------------------------[Fill log entries]--------------------------
+        self.info.update(mcvqoe.write_log.fill_log(self))
+        
+        self.info['test']='PSuD'
+        
         #-----------------------[Setup Files and folders]-----------------------
         
         #generate data dir names
@@ -183,6 +190,8 @@ class PSuD:
             mcvqoe.write_cp(out_name+'.csv',cp)
             
         #---------------------------[write log entry]---------------------------
+        
+        mcvqoe.write_log.pre(info=self.info, outdir=self.outdir)
         
         #-------------------------[Generate csv header]-------------------------
         
@@ -250,6 +259,10 @@ class PSuD:
         
         #move temp file to real file
         shutil.move(temp_data_filename,self.data_filename)
+        
+        #finish log entry
+        #TODO : get post test notes from user
+        mcvqoe.post(outdir=self.outdir)
 
     def compute_intellligibility(self,audio,cutpoints):
         #----------------[Cut audio and perform time expand]----------------
@@ -411,7 +424,8 @@ if __name__ == "__main__":
     
     #TESTING : put fake test info here for now
     test_obj.info={}
-    test_obj.info['Test Type']='testing'
+    
+    test_obj.info=mcvqoe.pretest(args.outdir)
     
     #---------------------------[Open RadioInterface]---------------------------
     
