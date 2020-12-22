@@ -15,10 +15,6 @@ import mcvqoe
 from abcmrt import ABC_MRT16
 
 
-if __name__ == "__main__":
-    from radioInterface import RadioInterface
-
-
 #offset rx audio so that M2E latency is removed
 #TODO : maybe this should be in a comon library?
 def align_audio(tx,rx,m2e_latency,fs):
@@ -429,7 +425,7 @@ if __name__ == "__main__":
     
     #---------------------------[Open RadioInterface]---------------------------
     
-    with RadioInterface(args.radioport) as test_obj.ri:
+    with mcvqoe.RadioInterface(args.radioport) as test_obj.ri:
         #------------------------------[Run Test]------------------------------
         test_obj.run()
         #TESTING : print out all class properties
