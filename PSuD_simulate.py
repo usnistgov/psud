@@ -69,6 +69,8 @@ if __name__ == "__main__":
                         help='P_r for probabilityiesr')
     parser.add_argument('--P-interval',dest='pInterval',type=float,default=1,
                         help='Time interval for probabilityiesr in seconds')
+    parser.add_argument('--m2e-min-corr', default=test_obj.m2e_min_corr, metavar='C',dest='m2e_min_corr',
+                        help='Minimum correlation value for acceptable mouth 2 ear measurement (default: %(default)0.2f)')
                                                 
                         
     #-----------------------------[Parse arguments]-----------------------------
