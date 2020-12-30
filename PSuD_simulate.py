@@ -86,6 +86,12 @@ if __name__ == "__main__":
         if hasattr(test_obj,k):
             setattr(test_obj,k,v)
             
+        
+    #------------------------------[Get test info]------------------------------
+    
+    test_obj.info=mcvqoe.pretest(args.outdir,ri=sim_obj)
+    
+
     #---------------------------[add probabilityiesr]---------------------------
     
     if(args.use_probabilityiser):
@@ -96,15 +102,12 @@ if __name__ == "__main__":
         prob.P_r=args.P_r
         prob.interval=args.pInterval
         
-        sim_obj.pre_impairment=prob.process_audio
+        test_obj.info['PBI P_a1']=str(args.P_a1)
+        test_obj.info['PBI P_a2']=str(args.P_a2)
+        test_obj.info['PBI P_r'] =str(args.P_r)
+        test_obj.info['PBI interval']=str(args.pInterval)
         
-    #------------------------------[Get test info]------------------------------
-    
-    #TESTING : put fake test info here for now
-    test_obj.info={}
-    test_obj.info['Test Type']='testing'
-    
-    test_obj.info=mcvqoe.pretest(args.outdir,ri=sim_obj)
+        sim_obj.pre_impairment=prob.process_audio
     
     
     #--------------------------------[Run Test]--------------------------------
