@@ -57,7 +57,7 @@ class PSuD:
         self.ptt_wait=0.68
         self.ptt_gap=3.1
         self.rng=np.random.default_rng()
-        self.play_record_func=None
+        self.audioInterface=None
         self.mrt = ABC_MRT16()
         self.time_expand=[100e-3 - 0.11e-3, 0.11e-3]
         self.m2e_min_corr=0.76
@@ -139,6 +139,16 @@ class PSuD:
         self.audio_clip_check()
         
         #-------------------[Find and Setup Audio interface]-------------------
+        dev=self.audioInterface.find_device()
+        
+        #set device
+        self.audioInterface.device=dev
+        
+        #set parameteres
+        self.audioInterface.buffersize=self.bufSize
+        self.audioInterface.blocksize=self.blockSize
+        self.audioInterface.overPlay=self.overPlay
+
         #-------------------------[Get Test Start Time]-------------------------
         self.info['Tstart']=datetime.datetime.now()
         dtn=self.info['Tstart'].strftime('%d-%b-%Y_%H-%M-%S')
@@ -214,8 +224,7 @@ class PSuD:
             clip_name=os.path.join(wavdir,f'Rx{trial+1}_{clip_names[clip_index]}.wav')
             
             #play/record audio
-            self.play_record_func(self.y[clip_index],buffersize=self.bufSize, blocksize=self.blockSize,
-                out_name=clip_name,overPlay=self.overPlay)
+            self.audioInterface.play_record(self.y[clip_index],clip_name)
             
             #un-push PTT
             self.ri.ptt(False)

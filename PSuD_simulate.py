@@ -23,8 +23,8 @@ if __name__ == "__main__":
     test_obj.ptt_wait=0
     test_obj.ptt_gap=0
     
-    #set play record function to simulated play_record
-    test_obj.play_record_func=sim_obj.play_record
+    #set audioInterface to sim object
+    test_obj.audioInterface=sim_obj
     #set radio interface object to sim object
     test_obj.ri=sim_obj
 
