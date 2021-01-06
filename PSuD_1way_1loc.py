@@ -449,7 +449,3 @@ if __name__ == "__main__":
     with mcvqoe.RadioInterface(args.radioport) as test_obj.ri:
         #------------------------------[Run Test]------------------------------
         test_obj.run()
-        #TESTING : print out all class properties
-        print('Properties for test_obj:')
-        for k,v in vars(test_obj).items():
-            print(f'\t{k} = {v}')
