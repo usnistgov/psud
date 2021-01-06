@@ -22,6 +22,8 @@ if __name__ == "__main__":
     #set wait times to zero for simulation
     test_obj.ptt_wait=0
     test_obj.ptt_gap=0
+    #only get test notes on error
+    test_obj.get_post_notes=lambda : mcvqoe.post_test(error_only=True)
     
     #set audioInterface to sim object
     test_obj.audioInterface=sim_obj
