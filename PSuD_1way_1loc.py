@@ -425,8 +425,11 @@ if __name__ == "__main__":
         if hasattr(test_obj,k):
             setattr(test_obj,k,v)
             
-    #------------------------------[Get test info]------------------------------
+    #-------------------------[Create audio interface]-------------------------
     
+    test_obj.audioInterface=mcvqoe.AudioPlayer()
+            
+    #------------------------------[Get test info]------------------------------
     test_obj.info=mcvqoe.pretest(args.outdir)
     
     #---------------------------[Open RadioInterface]---------------------------
