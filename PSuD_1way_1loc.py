@@ -61,6 +61,7 @@ class PSuD:
         self.mrt = ABC_MRT16()
         self.time_expand=[100e-3 - 0.11e-3, 0.11e-3]
         self.m2e_min_corr=0.76
+        self.get_post_notes=None
         
     #load audio files for use in test
     def load_audio(self):
@@ -199,75 +200,84 @@ class PSuD:
         
         mcvqoe.write_log.pre(info=self.info, outdir=self.outdir)
         
-        #-------------------------[Generate csv header]-------------------------
+        #---------------[Try block so we write notes at the end]---------------
         
-        header,dat_format=self.csv_header_fmt()
+        try:
         
-        #-----------------------[write initial csv file]-----------------------
-        with open(temp_data_filename,'wt') as f:
-            f.write(header)
-        #--------------------------[Measurement Loop]--------------------------
-        for trial in range(self.trials):
-            #-----------------------[Get Trial Timestamp]-----------------------
-            ts=datetime.datetime.now().strftime('%d-%b-%Y %H:%M:%S')
-            #--------------------[Key Radio and play audio]--------------------
+            #-------------------------[Generate csv header]-------------------------
             
-            #push PTT
-            self.ri.ptt(True)
+            header,dat_format=self.csv_header_fmt()
             
-            #pause for access
-            time.sleep(self.ptt_wait)
-            
-            clip_index=self.clipi[trial]
-            
-            #generate filename
-            clip_name=os.path.join(wavdir,f'Rx{trial+1}_{clip_names[clip_index]}.wav')
-            
-            #play/record audio
-            self.audioInterface.play_record(self.y[clip_index],clip_name)
-            
-            #un-push PTT
-            self.ri.ptt(False)
-            #-----------------------[Pause Between runs]-----------------------
-            
-            time.sleep(self.ptt_gap)
-            #---------------------[Load in recorded audio]---------------------
-            fs,rec_dat = scipy.io.wavfile.read(clip_name)
-            if(self.fs != fs):
-                raise RuntimeError('Recorded sample rate does not match!')
+            #-----------------------[write initial csv file]-----------------------
+            with open(temp_data_filename,'wt') as f:
+                f.write(header)
+            #--------------------------[Measurement Loop]--------------------------
+            for trial in range(self.trials):
+                #-----------------------[Get Trial Timestamp]-----------------------
+                ts=datetime.datetime.now().strftime('%d-%b-%Y %H:%M:%S')
+                #--------------------[Key Radio and play audio]--------------------
                 
-            #------------------------[calculate M2E]------------------------
-            dly_res = mcvqoe.ITS_delay_est(self.y[clip_index], rec_dat, "f", fsamp=self.fs,min_corr=self.m2e_min_corr)
+                #push PTT
+                self.ri.ptt(True)
+                
+                #pause for access
+                time.sleep(self.ptt_wait)
+                
+                clip_index=self.clipi[trial]
+                
+                #generate filename
+                clip_name=os.path.join(wavdir,f'Rx{trial+1}_{clip_names[clip_index]}.wav')
+                
+                #play/record audio
+                self.audioInterface.play_record(self.y[clip_index],clip_name)
+                
+                #un-push PTT
+                self.ri.ptt(False)
+                #-----------------------[Pause Between runs]-----------------------
+                
+                time.sleep(self.ptt_gap)
+                #---------------------[Load in recorded audio]---------------------
+                fs,rec_dat = scipy.io.wavfile.read(clip_name)
+                if(self.fs != fs):
+                    raise RuntimeError('Recorded sample rate does not match!')
+                    
+                #------------------------[calculate M2E]------------------------
+                dly_res = mcvqoe.ITS_delay_est(self.y[clip_index], rec_dat, "f", fsamp=self.fs,min_corr=self.m2e_min_corr)
+                
+                if(not np.any(dly_res)):
+                    #bad M2E, everything sucks, no info
+                    estimated_m2e_latency=None
+                    success=np.empty(self.num_keywords)
+                    success.fill(None)
+                else:
+                
+                    estimated_m2e_latency=dly_res[1] / self.fs
+
+                #---------------------------[align audio]---------------------------
+                
+                    rec_dat_no_latency = align_audio(self.y[clip_index],rec_dat,estimated_m2e_latency,self.fs)
+                    
+                #---------------------[Compute intelligibility]---------------------
+                
+                    success=self.compute_intellligibility(rec_dat_no_latency,self.cutpoints[clip_index])
+
+                #---------------------------[Write File]---------------------------
+                with open(temp_data_filename,'at') as f:
+                    f.write(dat_format.format(timestamp=ts,name=clip_names[self.clipi[trial]],m2e=estimated_m2e_latency,intel=success,overrun=0,underrun=0))
+                    
+            #-------------------------------[Cleanup]-------------------------------
             
-            if(not np.any(dly_res)):
-                #bad M2E, everything sucks, no info
-                estimated_m2e_latency=None
-                success=np.empty(self.num_keywords)
-                success.fill(None)
+            #move temp file to real file
+            shutil.move(temp_data_filename,self.data_filename)
+        
+        finally:
+            if(self.get_post_notes):
+                #get notes
+                info=self.get_post_notes()
             else:
-            
-                estimated_m2e_latency=dly_res[1] / self.fs
-
-            #---------------------------[align audio]---------------------------
-            
-                rec_dat_no_latency = align_audio(self.y[clip_index],rec_dat,estimated_m2e_latency,self.fs)
-                
-            #---------------------[Compute intelligibility]---------------------
-            
-                success=self.compute_intellligibility(rec_dat_no_latency,self.cutpoints[clip_index])
-
-            #---------------------------[Write File]---------------------------
-            with open(temp_data_filename,'at') as f:
-                f.write(dat_format.format(timestamp=ts,name=clip_names[self.clipi[trial]],m2e=estimated_m2e_latency,intel=success,overrun=0,underrun=0))
-                
-        #-------------------------------[Cleanup]-------------------------------
-        
-        #move temp file to real file
-        shutil.move(temp_data_filename,self.data_filename)
-        
-        #finish log entry
-        #TODO : get post test notes from user
-        mcvqoe.post(outdir=self.outdir)
+                info={}
+            #finish log entry
+            mcvqoe.post(outdir=self.outdir,info=info)
 
     def compute_intellligibility(self,audio,cutpoints):
         #----------------[Cut audio and perform time expand]----------------
@@ -374,6 +384,8 @@ if __name__ == "__main__":
 
     #create object here to use default values for arguments
     test_obj=PSuD()
+    #set end notes function
+    test_obj.get_post_notes=mcvqoe.post_test
 
     #-----------------------[Setup ArgumentParser object]-----------------------
 
