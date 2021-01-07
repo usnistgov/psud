@@ -73,6 +73,13 @@ if __name__ == "__main__":
                         help='Time interval for probabilityiesr in seconds')
     parser.add_argument('--m2e-min-corr', default=test_obj.m2e_min_corr, metavar='C',dest='m2e_min_corr',
                         help='Minimum correlation value for acceptable mouth 2 ear measurement (default: %(default)0.2f)')
+    parser.add_argument('-c','--channel-tech', default=sim_obj.chanel_tech, metavar='TECH',dest='chanel_tech',
+                        help='Channel technology to simulate (default: %(default)s)')
+    parser.add_argument('--channel-rate', default=sim_obj.chanel_rate, metavar='RATE',dest='chanel_rate',
+                        help='Channel technology rate to simulate. Passing \'None\' will use the technology default. (default: %(default)s)')
+    parser.add_argument('--channel-m2e', type=float, default=sim_obj.m2e_latency, metavar='L',dest='m2e_latency',
+                        help='Channel mouth to ear latency, in seconds, to simulate. (default: %(default)s)')
+                        
                                                 
                         
     #-----------------------------[Parse arguments]-----------------------------
@@ -93,6 +100,17 @@ if __name__ == "__main__":
     
     test_obj.info=mcvqoe.pretest(args.outdir,ri=sim_obj)
     
+    #-------------------------[Set simulation settings]-------------------------
+
+    sim_obj.chanel_tech=args.chanel_tech
+    
+    #set chanel rate, check for None
+    if(args.chanel_rate=='None'):
+        sim_obj.chanel_rate=None
+    else:
+        sim_obj.chanel_rate=args.chanel_rate
+        
+    sim_obj.m2e_latency=args.m2e_latency
 
     #---------------------------[add probabilityiesr]---------------------------
     
