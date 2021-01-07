@@ -3,3 +3,10 @@
 *.pyc
 __pycache__/
 data/
+
+#log files
+tests.log
+
+#test type file
+test-type.txt
+
