@@ -10,6 +10,8 @@ import os
 import warnings
 import pdb
 
+# TODO: Consider designing a process class to simplify passing of paths and fs in these functions. Could just be class properties
+
 def load_session(test_name,data_path,cp_path):
     fname = "{}.csv".format(os.path.join(data_path,test_name))
     test = pd.read_csv(fname)
