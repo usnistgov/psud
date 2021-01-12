@@ -10,9 +10,9 @@ import os
 import warnings
 import pdb
 
-# TODO: Consider designing a process class to simplify passing of paths and fs in these functions. Could just be class properties
+
 class PSuD_process():
-    
+    #TODO: Add documentation and docstrings to all methods    
     def __init__(self,test_names, data_path='',cp_path='',fs = 48e3):
         self.test_names = test_names
         self.data_path = data_path
@@ -148,28 +148,7 @@ class PSuD_process():
         return(psud)
     
     
-        
-
-# def main(filenames,data_path,cp_path,threshold,fs):
-#     # Load test data
-#     test_dat,cps = load_sessions(filenames,
-#                              data_path=data_dir,
-#                              cp_path=cp_path,
-#                              update_warn = False)
     
-    
-#     # test_cp = []
-#     # for clip in test_clips:
-#     #     test_cp.append(get_cutpoints(clip, cp_path))
-    
-#     test_chains = get_test_chains(test_dat,
-#                                   cps,
-#                                   threshold,
-#                                   fs)
-    
-#     for msg_len in np.arange(1,11):
-#         psud_m = eval_psud(test_chains,msg_len)
-#         print("PSuD({}) = {}".format(msg_len,psud_m))
 if(__name__ == "__main__"):
     
     data_dir = os.path.join("data","csv")
@@ -190,7 +169,6 @@ if(__name__ == "__main__"):
                           cp_path=cp_dir,
                           fs = 48e3)
     
-    tchains = t_proc.get_test_chains(thresh)
     for msg_len in np.arange(1,11):
         psud_m = t_proc.eval_psud(thresh,msg_len)
         print("PSuD({}) = {}".format(msg_len,psud_m))
