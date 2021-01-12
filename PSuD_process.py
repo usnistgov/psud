@@ -10,13 +10,16 @@ import os
 import warnings
 import pdb
 import mcvqoe.math
+import mcvqoe.simulation
+import argparse
 
 class PSuD_process():
     #TODO: Add documentation and docstrings to all methods    
-    def __init__(self,test_names, data_path='',cp_path='',fs = 48e3):
+    #TODO: Change to only take one path, assume has csv and wav in it
+    def __init__(self,test_names, test_path='',fs = 48e3):
         self.test_names = test_names
-        self.data_path = data_path
-        self.cp_path = cp_path
+        self.data_path = os.path.join(test_path,'csv')
+        self.cp_path = os.path.join(test_path,'wav')
         self.fs = fs
         
         if(type(self.test_names) is str):
@@ -158,29 +161,65 @@ class PSuD_process():
         
         return((psud,ci))
     
-    
+
     
 if(__name__ == "__main__"):
     
-    data_dir = os.path.join("data","csv")
-    cp_dir = os.path.join("data","wav")
-    # Data generated from:
-    # python PSuD_simulate.py --audioPath D:\MCV_671DRDOG\Audio-Clips\PSuD_Clip_10  --audioFiles F1_PSuD_Norm_10.wav F3_PSuD_Norm_10.wav M3_PSuD_Norm_10.wav M4_PSuD_Norm_10.wav --trials 100 --P-a1 0.95 --P-a2 0.95 --P-r 0.95 --P-interval 0.2 -P
+    # Set up argument parser
+    parser = argparse.ArgumentParser(
+        description = __doc__)
+    parser.add_argument('test_names',
+                        type = str,
+                        help = "Test names (same as name of folder for wav files)")
+    parser.add_argument('-p', '--test-path',
+                        default = '',
+                        type = str,
+                        help = "Path where test data is stored. Must contain wav and csv directories.")
     
-    thresh = 0.5
+    parser.add_argument('-f', '--fs',
+                        default = 48e3,
+                        type = int,
+                        help = "Sampling rate for audio in tests")
+    parser.add_argument('-t', '--threshold',
+                        default = 0.5,
+                        type  = float,
+                        help = "Intelligibility success threshold")
+    parser.add_argument('-m', '--message-length',
+                        default = 1,
+                        type = float,
+                        help = "Message length")
     
-    filenames = ["capture_simulation_test_07-Jan-2021_09-43-49.csv",
-                 "capture_simulation_test_08-Jan-2021_15-29-48.csv"]
-    tests = ["capture_simulation_test_07-Jan-2021_09-43-49",
-                 "capture_simulation_test_08-Jan-2021_15-29-48"]
-    fs = 48e3
+    args = parser.parse_args()
     
-    t_proc = PSuD_process(tests, 
-                          data_path=data_dir,
-                          cp_path=cp_dir,
-                          fs = 48e3)
+
+    t_proc = PSuD_process(args.test_names,
+                          test_path= args.test_path,
+                          fs = args.fs)
+    psud_m,psud_ci = t_proc.eval_psud(args.threshold,args.message_length)
     
-    for msg_len in np.arange(1,11):
-        psud_m,psud_ci = t_proc.eval_psud(thresh,msg_len)
-        print("PSuD({}) = {:.4f}, ({:.4f},{:.4f})".format(msg_len,psud_m,psud_ci[0],psud_ci[1]))
+    print("----Intelligibility Success threshold = {}----".format(args.threshold))
+    print("Results shown as Psud(t) = mean, (95% C.I.)")
+    msg_str = "PSuD({}) = {:.4f}, ({:.4f},{:.4f})"
+    print(msg_str.format(args.message_length,
+                          psud_m,
+                          psud_ci[0],
+                          psud_ci[1]
+                          ))
+    # for thresh in [0.5, 0.7, 1]:
+    #     print("----Intelligibility Success threshold = {}----".format(thresh))
+    #     msg_str = "PSuD({}) = {:.4f}, ({:.4f},{:.4f}) | Expected = {:.4f} | Pass: {}"
+    #     for msg_len in np.arange(1,11):
+    #         psud_m,psud_ci = t_proc.eval_psud(thresh,msg_len)
+    #         e_psud = pbi.expected_psud(msg_len)
+    #         if(psud_ci[0] <= e_psud and e_psud <= psud_ci[1]):
+    #             match = True
+    #         else:
+    #             match = False
+            
+    #         print(msg_str.format(msg_len,
+    #                              psud_m,
+    #                              psud_ci[0],
+    #                              psud_ci[1],
+    #                              e_psud,
+    #                              match))
     
