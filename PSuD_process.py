@@ -9,7 +9,7 @@ import pandas as pd
 import os
 import warnings
 import pdb
-
+import mcvqoe.math
 
 class PSuD_process():
     #TODO: Add documentation and docstrings to all methods    
@@ -136,16 +136,27 @@ class PSuD_process():
         
         return(chain_time)
         
-    def eval_psud(self,threshold,msg_len):
+    def eval_psud(self,threshold,msg_len,p=0.95,R=1e4,uncertainty=True):
         # Calculate test chains for this threshold, if we don't already have them
-        if(threshold in self.test_chains):
+        if(threshold not in self.test_chains):
             self.get_test_chains(threshold)
         
         # Get relevant test chains
         test_chains = self.test_chains[threshold]
+        
+        # Label chains as success or failure
+        msg_success = test_chains >= msg_len
         # Calculate fraction of tests that match msg_len requirement
-        psud = sum(test_chains >= msg_len)/len(test_chains)
-        return(psud)
+        psud = np.mean(msg_success)
+        
+        if(uncertainty):
+            # Calculate bootstrap uncertainty of msg success
+            ci,_ = mcvqoe.math.bootstrap_ci(msg_success,p=p,R=R)
+        else:
+            ci = None
+        
+        
+        return((psud,ci))
     
     
     
@@ -156,7 +167,7 @@ if(__name__ == "__main__"):
     # Data generated from:
     # python PSuD_simulate.py --audioPath D:\MCV_671DRDOG\Audio-Clips\PSuD_Clip_10  --audioFiles F1_PSuD_Norm_10.wav F3_PSuD_Norm_10.wav M3_PSuD_Norm_10.wav M4_PSuD_Norm_10.wav --trials 100 --P-a1 0.95 --P-a2 0.95 --P-r 0.95 --P-interval 0.2 -P
     
-    thresh = 1
+    thresh = 0.5
     
     filenames = ["capture_simulation_test_07-Jan-2021_09-43-49.csv",
                  "capture_simulation_test_08-Jan-2021_15-29-48.csv"]
@@ -170,6 +181,6 @@ if(__name__ == "__main__"):
                           fs = 48e3)
     
     for msg_len in np.arange(1,11):
-        psud_m = t_proc.eval_psud(thresh,msg_len)
-        print("PSuD({}) = {}".format(msg_len,psud_m))
+        psud_m,psud_ci = t_proc.eval_psud(thresh,msg_len)
+        print("PSuD({}) = {:.4f}, ({:.4f},{:.4f})".format(msg_len,psud_m,psud_ci[0],psud_ci[1]))
     
