@@ -6,6 +6,7 @@ import scipy.io.wavfile as wav
 import numpy as np
 import shutil
 from PSuD_1way_1loc import PSuD as PSuD
+from PSuD_process import PSuD_process 
 import mcvqoe.simulation
 
 #main function 
@@ -79,7 +80,14 @@ if __name__ == "__main__":
                         help='Channel technology rate to simulate. Passing \'None\' will use the technology default. (default: %(default)s)')
     parser.add_argument('--channel-m2e', type=float, default=sim_obj.m2e_latency, metavar='L',dest='m2e_latency',
                         help='Channel mouth to ear latency, in seconds, to simulate. (default: %(default)s)')
-                        
+    parser.add_argument('--msg-eval',
+                        type = list,
+                        default = [1,5,10],
+                        help = "Message lengths to evalue PSuD at upon completion")      
+    parser.add_argument('--intell-threshold',
+                        type = float,
+                        default = 0.5,
+                        help = "Intelligibility success threshold")              
                                                 
                         
     #-----------------------------[Parse arguments]-----------------------------
@@ -115,12 +123,14 @@ if __name__ == "__main__":
     #---------------------------[add probabilityiesr]---------------------------
     
     if(args.use_probabilityiser):
+        #TODO: Move this outside of if so can be used to validate results
         prob=mcvqoe.simulation.PBI()
         
         prob.P_a1=args.P_a1
         prob.P_a2=args.P_a2
         prob.P_r=args.P_r
         prob.interval=args.pInterval
+        
         
         test_obj.info['PBI P_a1']=str(args.P_a1)
         test_obj.info['PBI P_a2']=str(args.P_a2)
@@ -131,7 +141,39 @@ if __name__ == "__main__":
     
     
     #--------------------------------[Run Test]--------------------------------
-    test_obj.run()
+    test_name = test_obj.run()
+    test_path = os.path.join(args.outdir,"data")
+    #--------------------------------[Evaluate Test]---------------------------
+    # TODO: Make this fs determination smarter
+    t_proc = PSuD_process(test_name,
+                          test_path = test_path,
+                          fs = 48e3)
+    print("----Intelligibility Success threshold = {}----".format(args.intell_threshold))
+    print("Results shown as Psud(t) = mean, (95% C.I.)")
+    
+    for msg_len in args.msg_eval:
+            psud_m,psud_ci = t_proc.eval_psud(args.intell_threshold,msg_len)
+            
+            if(args.use_probabilityiser):
+                e_psud = prob.expected_psud(msg_len)
+                if(psud_ci[0] <= e_psud and e_psud <= psud_ci[1]):
+                    match = True
+                else:
+                    match = False
+                results_str = "PSuD({}) = {:.4f}, ({:.4f},{:.4f}) | Expected = {:.4f} | Pass: {}"
+                results = results_str.format(msg_len,
+                                             psud_m,
+                                             psud_ci[0],
+                                             psud_ci[1],
+                                             e_psud,
+                                             match)
+            else:
+                results_str = "PSuD({}) = {:.4f}, ({:.4f},{:.4f})"
+                results = results_str.format(msg_len,
+                                    psud_m,
+                                    psud_ci[0],
+                                    psud_ci[1])
+            print(results)
     #TESTING : print out all class properties
     #print('Properties for test_obj:')
     #for k,v in vars(test_obj).items():
