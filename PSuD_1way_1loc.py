@@ -278,6 +278,7 @@ class PSuD:
                 info={}
             #finish log entry
             mcvqoe.post(outdir=self.outdir,info=info)
+            return(base_filename)
 
     def compute_intellligibility(self,audio,cutpoints):
         #----------------[Cut audio and perform time expand]----------------
