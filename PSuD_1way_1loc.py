@@ -42,26 +42,44 @@ class PSuD:
     data_fields=("Timestamp","Filename","m2e_latency","Over_runs","Under_runs")
     no_log=('y','clipi','data_dir','wav_data_dir','csv_data_dir','cutpoints','data_fields','time_expand_samples','num_keywords')
     
-    def __init__(self):
+    def __init__(self,
+                 audioFiles=[],
+                 audioPath = '',
+                 overPlay=1.0,
+                 trials = 100,
+                 blockSize=512,
+                 bufSize=20,
+                 outdir='',
+                 ri=None,
+                 info=None,
+                 fs = 48e3,
+                 ptt_wait=0.68,
+                 ptt_gap=3.1,
+                 rng=np.random.default_rng(),
+                 audioInterface=None,
+                 mrt= ABC_MRT16(),
+                 time_expand = [100e-3 - 0.11e-3, 0.11e-3],
+                 m2e_min_corr = 0.76,
+                 get_post_notes = None):
         #set default values
-        self.audioFiles=[]
-        self.audioPath=''
-        self.overPlay=1.0
-        self.trials=100
-        self.blockSize=512
-        self.bufSize=20
-        self.outdir=''
-        self.ri=None
-        self.info=None
-        self.fs=48e3
-        self.ptt_wait=0.68
-        self.ptt_gap=3.1
-        self.rng=np.random.default_rng()
-        self.audioInterface=None
-        self.mrt = ABC_MRT16()
-        self.time_expand=[100e-3 - 0.11e-3, 0.11e-3]
-        self.m2e_min_corr=0.76
-        self.get_post_notes=None
+        self.audioFiles=audioFiles
+        self.audioPath=audioPath
+        self.overPlay=overPlay
+        self.trials=trials
+        self.blockSize=blockSize
+        self.bufSize=bufSize
+        self.outdir=outdir
+        self.ri=ri
+        self.info=info
+        self.fs=fs
+        self.ptt_wait=ptt_wait
+        self.ptt_gap=ptt_gap
+        self.rng=rng
+        self.audioInterface=audioInterface
+        self.mrt = mrt
+        self.time_expand=time_expand
+        self.m2e_min_corr=m2e_min_corr
+        self.get_post_notes=get_post_notes
         
     #load audio files for use in test
     def load_audio(self):
@@ -213,6 +231,9 @@ class PSuD:
                 f.write(header)
             #--------------------------[Measurement Loop]--------------------------
             for trial in range(self.trials):
+                #-----------------------[Print Check]-------------------------
+                if(trial % 10 == 0):
+                    print('-----Trial {}'.format(trial))
                 #-----------------------[Get Trial Timestamp]-----------------------
                 ts=datetime.datetime.now().strftime('%d-%b-%Y %H:%M:%S')
                 #--------------------[Key Radio and play audio]--------------------
@@ -378,7 +399,7 @@ class PSuD:
         return match[0]
 
 
-#main function 
+# %%---------------------------------[main]-----------------------------------
 if __name__ == "__main__":
 
     #---------------------------[Create Test object]---------------------------
