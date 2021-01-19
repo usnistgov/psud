@@ -22,10 +22,15 @@ class PSuD_process():
         self.cp_path = os.path.join(test_path,'wav')
         self.fs = fs
         
+        #TODO: Add audio length - store max we've seen, 
+        self.max_audio_length = None
+        
         if(type(self.test_names) is str):
             self.test_names = [self.test_names]
         
         self.test_dat, self.cps = self.load_sessions()
+        
+        #TODO: 
         
         # Initialize empty dictionary to store test_chains in, keys will be threshold values
         self.test_chains = dict()
@@ -140,6 +145,9 @@ class PSuD_process():
         return(chain_time)
         
     def eval_psud(self,threshold,msg_len,p=0.95,R=1e4,uncertainty=True):
+        
+        # TODO: if msg_len > self.max_audio_length report NaN
+        
         # Calculate test chains for this threshold, if we don't already have them
         if(threshold not in self.test_chains):
             self.get_test_chains(threshold)
@@ -181,11 +189,15 @@ if(__name__ == "__main__"):
                         type = int,
                         help = "Sampling rate for audio in tests")
     parser.add_argument('-t', '--threshold',
-                        default = 0.5,
+                        default = [],
+                        nargs="+",
+                        action = "extend",
                         type  = float,
                         help = "Intelligibility success threshold")
     parser.add_argument('-m', '--message-length',
-                        default = 1,
+                        default = [],
+                        nargs = "+",
+                        action = "extend",
                         type = float,
                         help = "Message length")
     
@@ -195,16 +207,19 @@ if(__name__ == "__main__"):
     t_proc = PSuD_process(args.test_names,
                           test_path= args.test_path,
                           fs = args.fs)
-    psud_m,psud_ci = t_proc.eval_psud(args.threshold,args.message_length)
-    
-    print("----Intelligibility Success threshold = {}----".format(args.threshold))
-    print("Results shown as Psud(t) = mean, (95% C.I.)")
-    msg_str = "PSuD({}) = {:.4f}, ({:.4f},{:.4f})"
-    print(msg_str.format(args.message_length,
-                          psud_m,
-                          psud_ci[0],
-                          psud_ci[1]
-                          ))
+    # pdb.set_trace()
+    for threshold in args.threshold:
+        print("----Intelligibility Success threshold = {}----".format(threshold))
+        print("Results shown as Psud(t) = mean, (95% C.I.)")
+        msg_str = "PSuD({}) = {:.4f}, ({:.4f},{:.4f})"
+        for message_len in args.message_length:    
+            psud_m,psud_ci = t_proc.eval_psud(threshold,message_len)
+        
+            print(msg_str.format(message_len,
+                                  psud_m,
+                                  psud_ci[0],
+                                  psud_ci[1]
+                                  ))
     # for thresh in [0.5, 0.7, 1]:
     #     print("----Intelligibility Success threshold = {}----".format(thresh))
     #     msg_str = "PSuD({}) = {:.4f}, ({:.4f},{:.4f}) | Expected = {:.4f} | Pass: {}"
