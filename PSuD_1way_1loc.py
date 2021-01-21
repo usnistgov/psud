@@ -445,11 +445,11 @@ if __name__ == "__main__":
                         'two values for an asymmetric expansion')
     parser.add_argument('-o', '--outdir', default='', metavar='DIR',
                         help='Directory that is added to the output path for all files')
-    parser.add_argument('-w', '--PTTWait', default=test_obj.ptt_wait, metavar='T',dest='ptt_wait',
+    parser.add_argument('-w', '--PTTWait', type=float, default=test_obj.ptt_wait, metavar='T',dest='ptt_wait',
                         help='Time to wait between pushing PTT and playing audio')
-    parser.add_argument('-g', '--PTTGap', default=test_obj.ptt_gap, metavar='GAP',dest='ptt_gap',
+    parser.add_argument('-g', '--PTTGap', type=float, default=test_obj.ptt_gap, metavar='GAP',dest='ptt_gap',
                         help='Time to pause between trials')
-    parser.add_argument('--m2e-min-corr', default=test_obj.m2e_min_corr, metavar='C',dest='m2e_min_corr',
+    parser.add_argument('--m2e-min-corr', type=float, default=test_obj.m2e_min_corr, metavar='C',dest='m2e_min_corr',
                         help='Minimum correlation value for acceptable mouth 2 ear measurement (default: %(default)0.2f)')
                                                 
                         
