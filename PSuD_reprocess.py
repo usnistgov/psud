@@ -45,25 +45,18 @@ def reprocess(datafile,outfile=None,test_obj=None):
             clip_index=test_obj.find_clip_index(trial['Filename'])
             #create clip file name
             clip_name='Rx'+str(n+1)+'_'+trial['Filename']+'.wav'
-            #load audio file
-            fs_file, rec_dat = scipy.io.wavfile.read(os.path.join(test_obj.audioPath,clip_name))
-            if(test_obj.fs != fs_file):
-                raise RuntimeError('Recorded sample rate does not match!')
-                
-            #------------------------[calculate M2E]------------------------
-            estimated_m2e_latency = mcvqoe.ITS_delay_est(test_obj.y[clip_index], rec_dat, "f", fsamp=test_obj.fs)[1] / test_obj.fs
-
-            #---------------------------[align audio]---------------------------
             
-            rec_dat_no_latency = PSuD_1way_1loc.align_audio(test_obj.y[clip_index],rec_dat,estimated_m2e_latency,test_obj.fs)
+            new_dat=test_obj.process_audio(clip_index,os.path.join(test_obj.audioPath,clip_name))
             
-            #---------------------[Compute intelligibility]---------------------
+            #fill in data
+            #TODO : make this better, maybe use column names in format??
             
-            success=test_obj.compute_intellligibility(rec_dat_no_latency,test_obj.cutpoints[clip_index])
+            new_dat['timestamp']=trial['Timestamp']
+            new_dat['name']=trial['Filename']
+            new_dat['overrun']=trial['Over_runs']
+            new_dat['underrun']=trial['Under_runs']
 
-            #---------------------------[Write File]---------------------------
-
-            f_out.write(dat_format.format(timestamp=trial['Timestamp'],name=trial['Filename'],m2e=estimated_m2e_latency,intel=success,overrun=trial['Over_runs'],underrun=trial['Under_runs']))
+            f_out.write(dat_format.format(**new_dat))
 
 
 
