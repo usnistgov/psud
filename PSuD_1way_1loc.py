@@ -387,6 +387,9 @@ class PSuD:
                     #check for clip name field
                     elif(k==self.data_fields[1]):
                         clips.add(row[k])
+                    elif(row[k]=='None'):
+                        #handle None correcly
+                        row[k]=None
                     else:
                         #convert to float
                         row[k]=float(row[k]);
