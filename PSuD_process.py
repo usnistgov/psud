@@ -144,7 +144,7 @@ class PSuD_process():
         
         return(chain_time)
         
-    def eval_psud(self,threshold,msg_len,p=0.95,R=1e4,uncertainty=True):
+    def eval_psud(self,threshold,msg_len,p=0.95,R=1e4):
         
         # TODO: if msg_len > self.max_audio_length report NaN
         
@@ -160,11 +160,13 @@ class PSuD_process():
         # Calculate fraction of tests that match msg_len requirement
         psud = np.mean(msg_success)
         
-        if(uncertainty):
+        if(len(msg_success) > 1):
+            if(len(msg_success) < 30):
+                warnings.warn("Number of samples is small. Reported confidence intervals may not be useful.")
             # Calculate bootstrap uncertainty of msg success
             ci,_ = mcvqoe.math.bootstrap_ci(msg_success,p=p,R=R)
         else:
-            ci = None
+            ci = np.array([-np.inf,np.inf])
         
         
         return((psud,ci))
@@ -178,6 +180,8 @@ if(__name__ == "__main__"):
         description = __doc__)
     parser.add_argument('test_names',
                         type = str,
+                        nargs = "+",
+                        action = "extend",
                         help = "Test names (same as name of folder for wav files)")
     parser.add_argument('-p', '--test-path',
                         default = '',
@@ -214,7 +218,7 @@ if(__name__ == "__main__"):
         msg_str = "PSuD({}) = {:.4f}, ({:.4f},{:.4f})"
         for message_len in args.message_length:    
             psud_m,psud_ci = t_proc.eval_psud(threshold,message_len)
-        
+            
             print(msg_str.format(message_len,
                                   psud_m,
                                   psud_ci[0],
