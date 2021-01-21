@@ -221,7 +221,10 @@ class PSuD:
         #---------------[Try block so we write notes at the end]---------------
         
         try:
-        
+            #---------------------------[Turn on RI LED]---------------------------
+            
+            self.ri.led(1,True)
+            
             #-------------------------[Generate csv header]-------------------------
             
             header,dat_format=self.csv_header_fmt()
@@ -290,6 +293,10 @@ class PSuD:
             
             #move temp file to real file
             shutil.move(temp_data_filename,self.data_filename)
+            
+            #---------------------------[Turn off RI LED]---------------------------
+            
+            self.ri.led(1,False)
         
         finally:
             if(self.get_post_notes):
