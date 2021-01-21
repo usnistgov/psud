@@ -260,34 +260,20 @@ class PSuD:
                 #-----------------------[Pause Between runs]-----------------------
                 
                 time.sleep(self.ptt_gap)
-                #---------------------[Load in recorded audio]---------------------
-                fs,rec_dat = scipy.io.wavfile.read(clip_name)
-                if(self.fs != fs):
-                    raise RuntimeError('Recorded sample rate does not match!')
-                    
-                #------------------------[calculate M2E]------------------------
-                dly_res = mcvqoe.ITS_delay_est(self.y[clip_index], rec_dat, "f", fsamp=self.fs,min_corr=self.m2e_min_corr)
                 
-                if(not np.any(dly_res)):
-                    #bad M2E, everything sucks, no info
-                    estimated_m2e_latency=None
-                    success=np.empty(self.num_keywords)
-                    success.fill(None)
-                else:
+                #-------------------------[Process Audio]-------------------------
                 
-                    estimated_m2e_latency=dly_res[1] / self.fs
-
-                #---------------------------[align audio]---------------------------
-                
-                    rec_dat_no_latency = align_audio(self.y[clip_index],rec_dat,estimated_m2e_latency,self.fs)
-                    
-                #---------------------[Compute intelligibility]---------------------
-                
-                    success=self.compute_intellligibility(rec_dat_no_latency,self.cutpoints[clip_index])
+                trial_dat=self.process_audio(clip_index,clip_name)
 
                 #---------------------------[Write File]---------------------------
+                
+                trial_dat['name']      = clip_names[self.clipi[trial]]
+                trial_dat['timestamp'] = ts
+                trial_dat['overrun']   = 0
+                trial_dat['underrun']  = 0
+                
                 with open(temp_data_filename,'at') as f:
-                    f.write(dat_format.format(timestamp=ts,name=clip_names[self.clipi[trial]],m2e=estimated_m2e_latency,intel=success,overrun=0,underrun=0))
+                    f.write(dat_format.format(**trial_dat))
                     
             #-------------------------------[Cleanup]-------------------------------
             
@@ -307,6 +293,35 @@ class PSuD:
             #finish log entry
             mcvqoe.post(outdir=self.outdir,info=info)
         return(base_filename)
+        
+    def process_audio(self,clip_index,fname):
+        
+        #---------------------[Load in recorded audio]---------------------
+        fs,rec_dat = scipy.io.wavfile.read(fname)
+        if(self.fs != fs):
+            raise RuntimeError('Recorded sample rate does not match!')
+            
+        #------------------------[calculate M2E]------------------------
+        dly_res = mcvqoe.ITS_delay_est(self.y[clip_index], rec_dat, "f", fsamp=self.fs,min_corr=self.m2e_min_corr)
+        
+        if(not np.any(dly_res)):
+            #bad M2E, everything sucks, no info
+            estimated_m2e_latency=None
+            success=np.empty(self.num_keywords)
+            success.fill(None)
+        else:
+        
+            estimated_m2e_latency=dly_res[1] / self.fs
+
+        #---------------------------[align audio]---------------------------
+        
+            rec_dat_no_latency = align_audio(self.y[clip_index],rec_dat,estimated_m2e_latency,self.fs)
+            
+        #---------------------[Compute intelligibility]---------------------
+        
+            success=self.compute_intellligibility(rec_dat_no_latency,self.cutpoints[clip_index])
+            
+        return {'m2e':estimated_m2e_latency,'intel':success}
 
     def compute_intellligibility(self,audio,cutpoints):
         #----------------[Cut audio and perform time expand]----------------
