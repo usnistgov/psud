@@ -377,17 +377,6 @@ class PSuD:
         with open(fname,'rt') as csv_f:
             #create dict reader
             reader=csv.DictReader(csv_f)
-            #check for correct fieldnames
-            for n,field in enumerate(reader.fieldnames):
-                if(n<len(self.data_fields)):
-                    #standard column
-                    expected_field=self.data_fields[n]
-                else:
-                    #word column
-                    expected_field=f'W{n-len(self.data_fields)}_Int'
-                #check for a match
-                if(field!=expected_field):
-                    raise RuntimeError(f'Got \'{field}\' for column name but expected \'{expected_field}\'')
             #create empty list
             data=[]
             #create set for audio clips
