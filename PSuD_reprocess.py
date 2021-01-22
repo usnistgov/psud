@@ -48,15 +48,11 @@ def reprocess(datafile,outfile=None,test_obj=None):
             
             new_dat=test_obj.process_audio(clip_index,os.path.join(test_obj.audioPath,clip_name))
             
-            #fill in data
-            #TODO : make this better, maybe use column names in format??
+            #overwrite new data with old and merge
+            merged_dat={**trial, **new_dat}
             
-            new_dat['timestamp']=trial['Timestamp']
-            new_dat['name']=trial['Filename']
-            new_dat['overrun']=trial['Over_runs']
-            new_dat['underrun']=trial['Under_runs']
 
-            f_out.write(dat_format.format(**new_dat))
+            f_out.write(dat_format.format(**merged_dat))
 
 
 

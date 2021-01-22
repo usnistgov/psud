@@ -156,7 +156,7 @@ class PSuD:
             
     def csv_header_fmt(self):
         hdr=','.join(self.data_fields)
-        fmt="{timestamp},{name},{m2e},{overrun},{underrun}"
+        fmt='{'+'},{'.join(self.data_fields)+'}'
         for word in range(self.num_keywords):
             hdr+=f',W{word}_Int'
             fmt+=f',{{intel[{word}]}}'
@@ -288,10 +288,10 @@ class PSuD:
 
                 #---------------------------[Write File]---------------------------
                 
-                trial_dat['name']      = clip_names[self.clipi[trial]]
-                trial_dat['timestamp'] = ts
-                trial_dat['overrun']   = 0
-                trial_dat['underrun']  = 0
+                trial_dat['Filename']   = clip_names[self.clipi[trial]]
+                trial_dat['Timestamp']  = ts
+                trial_dat['Over_runs']  = 0
+                trial_dat['Under_runs'] = 0
                 
                 with open(temp_data_filename,'at') as f:
                     f.write(dat_format.format(**trial_dat))
@@ -340,7 +340,7 @@ class PSuD:
         success=self.compute_intellligibility(rec_dat_no_latency,self.cutpoints[clip_index])
 
             
-        return {'m2e':estimated_m2e_latency,'intel':success}
+        return {'m2e_latency':estimated_m2e_latency,'intel':success}
 
     def compute_intellligibility(self,audio,cutpoints):
         #----------------[Cut audio and perform time expand]----------------
