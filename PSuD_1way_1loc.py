@@ -11,6 +11,7 @@ from scipy.interpolate import interp1d
 import scipy.io.wavfile as wav
 import warnings
 import csv
+from distutils.util import strtobool
 
 import mcvqoe
 from abcmrt import ABC_MRT16
@@ -43,7 +44,7 @@ class PSuD:
     #on load conversion to datetime object fails for some reason
     #TODO : figure out how to fix this, string works for now but this should work too:
     #row[k]=datetime.datetime.strptime(row[k],'%d-%b-%Y_%H-%M-%S')
-    data_fields={"Timestamp":str,"Filename":str,"m2e_latency":float,"Over_runs":int,"Under_runs":int}
+    data_fields={"Timestamp":str,"Filename":str,"m2e_latency":float,"good_M2E":(lambda s: bool(strtobool(s))),"Over_runs":int,"Under_runs":int}
     no_log=('y','clipi','data_dir','wav_data_dir','csv_data_dir','cutpoints','data_fields','time_expand_samples','num_keywords')
     
     def __init__(self,
@@ -331,6 +332,10 @@ class PSuD:
         if(not np.any(dly_res)):
             #M2E estimation did not go super well, try again but restrict M2E bounds to keyword spacing
             dly_res = mcvqoe.ITS_delay_est(self.y[clip_index], rec_dat, "f", fsamp=self.fs,dlyBounds=(0,self.keyword_spacings[clip_index]))
+            
+            good_m2e=False
+        else:
+            good_m2e=True
              
         estimated_m2e_latency=dly_res[1] / self.fs
 
@@ -343,7 +348,7 @@ class PSuD:
         success=self.compute_intellligibility(rec_dat_no_latency,self.cutpoints[clip_index])
 
             
-        return {'m2e_latency':estimated_m2e_latency,'intel':success}
+        return {'m2e_latency':estimated_m2e_latency,'intel':success,'good_M2E':good_m2e}
 
     def compute_intellligibility(self,audio,cutpoints):
         #----------------[Cut audio and perform time expand]----------------
