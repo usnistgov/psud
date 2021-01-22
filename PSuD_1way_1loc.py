@@ -94,6 +94,8 @@ class PSuD:
         self.y=[]
         #list for cutpoints
         self.cutpoints=[]
+        #list for word spacing
+        self.keyword_spacings=[]
         
         for f in self.audioFiles:
             #make full path from relative paths
@@ -113,6 +115,24 @@ class PSuD:
             cp=mcvqoe.load_cp(fcsv)
             #add cutpoints to array
             self.cutpoints.append(cp)
+            
+            starts=[]
+            ends=[]
+            lens=[]
+            for cpw in cp:
+                if(np.isnan(cpw['Clip'])):
+                    #check if this is the first clip, if so skip
+                    #TODO: deal with this better?
+                    if(ends):
+                        ends[-1]=cpw['End']
+                        lens[-1]=ends[-1]-starts[-1]
+                else:
+                    starts.append(cpw['Start'])
+                    ends.append(cpw['End'])
+                    lens.append(ends[-1]-starts[-1])
+            
+            #word spacing is minimum distance converted to seconds
+            self.keyword_spacings.append(min(lens)/self.fs)
             
     def set_time_expand(self,t_ex):
         self.time_expand_samples=np.array(t_ex)
@@ -306,21 +326,19 @@ class PSuD:
         dly_res = mcvqoe.ITS_delay_est(self.y[clip_index], rec_dat, "f", fsamp=self.fs,min_corr=self.m2e_min_corr)
         
         if(not np.any(dly_res)):
-            #bad M2E, everything sucks, no info
-            estimated_m2e_latency=None
-            success=np.empty(self.num_keywords)
-            success.fill(None)
-        else:
-        
-            estimated_m2e_latency=dly_res[1] / self.fs
+            #M2E estimation did not go super well, try again but restrict M2E bounds to keyword spacing
+            dly_res = mcvqoe.ITS_delay_est(self.y[clip_index], rec_dat, "f", fsamp=self.fs,dlyBounds=(0,self.keyword_spacings[clip_index]))
+             
+        estimated_m2e_latency=dly_res[1] / self.fs
 
         #---------------------------[align audio]---------------------------
         
-            rec_dat_no_latency = align_audio(self.y[clip_index],rec_dat,estimated_m2e_latency,self.fs)
+        rec_dat_no_latency = align_audio(self.y[clip_index],rec_dat,estimated_m2e_latency,self.fs)
             
         #---------------------[Compute intelligibility]---------------------
         
-            success=self.compute_intellligibility(rec_dat_no_latency,self.cutpoints[clip_index])
+        success=self.compute_intellligibility(rec_dat_no_latency,self.cutpoints[clip_index])
+
             
         return {'m2e':estimated_m2e_latency,'intel':success}
 
