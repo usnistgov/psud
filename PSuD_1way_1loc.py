@@ -39,8 +39,11 @@ def align_audio(tx,rx,m2e_latency,fs):
         
         
 class PSuD:
-    
-    data_fields=("Timestamp","Filename","m2e_latency","Over_runs","Under_runs")
+
+    #on load conversion to datetime object fails for some reason
+    #TODO : figure out how to fix this, string works for now but this should work too:
+    #row[k]=datetime.datetime.strptime(row[k],'%d-%b-%Y_%H-%M-%S')
+    data_fields={"Timestamp":str,"Filename":str,"m2e_latency":float,"Over_runs":int,"Under_runs":int}
     no_log=('y','clipi','data_dir','wav_data_dir','csv_data_dir','cutpoints','data_fields','time_expand_samples','num_keywords')
     
     def __init__(self,
@@ -155,8 +158,8 @@ class PSuD:
             self.num_keywords=max(n,self.num_keywords)
             
     def csv_header_fmt(self):
-        hdr=','.join(self.data_fields)
-        fmt='{'+'},{'.join(self.data_fields)+'}'
+        hdr=','.join(self.data_fields.keys())
+        fmt='{'+'},{'.join(self.data_fields.keys())+'}'
         for word in range(self.num_keywords):
             hdr+=f',W{word}_Int'
             fmt+=f',{{intel[{word}]}}'
@@ -382,26 +385,25 @@ class PSuD:
             #create set for audio clips
             clips=set()
             for row in reader:
-                #convert values to float
+                #convert values proper datatype
                 for k in row:
-                    #check for timestamp field
-                    if(k==self.data_fields[0]):
-                        #convert to datetime object
-                        #well this fails for some reason, I guess a string is not horrible...
-                        #TODO : figure out how to fix this
-                        #row[k]=datetime.datetime.strptime(row[k],'%d-%b-%Y_%H-%M-%S')
-                        pass
-                    #check for clip name field
-                    elif(k==self.data_fields[1]):
+                    #check for clip name
+                    if(k=='Filename'):
+                        #save clips
                         clips.add(row[k])
-                    elif(row[k]=='None'):
-                        #handle None correcly
-                        row[k]=None
-                    else:
-                        #convert to float
+                    try:
+                        #check for None field
+                        if(row[k]=='None'):
+                            #handle None correcly
+                            row[k]=None
+                        else:
+                            #convert using function from data_fields
+                            self.data_fields[k](row[k])
+                    except KeyError:
+                        #not in data_fields, convert to float
                         row[k]=float(row[k]);
-                    
-                #append row to 
+                        
+                #append row to data
                 data.append(row)
         
         #set audio file names to Tx file names
