@@ -16,17 +16,60 @@ import argparse
 class PSuD_process():
     #TODO: Add documentation and docstrings to all methods    
     #TODO: Change to only take one path, assume has csv and wav in it
-    def __init__(self,test_names, test_path='',fs = 48e3):
-        self.test_names = test_names
-        self.data_path = os.path.join(test_path,'csv')
-        self.cp_path = os.path.join(test_path,'wav')
+    def __init__(self,test_names, test_path='',wav_dirs=[],fs = 48e3):
+        if(type(test_names) is str):
+            test_names = [test_names]
+            if(type(wav_dirs) is str):
+                wav_dirs=[wav_dirs]
+        
+        if(not wav_dirs):
+            wav_dirs=(None,)*len(test_names)
+        
+        #initialize info arrays
+        self.test_names = []
+        self.test_info={}
+        
+        #loop through all the tests and find files
+        for tn,wd in zip(test_names,wav_dirs):
+            #split name to get path and name
+            #if it's just a name all goes into name
+            dat_path,name=os.path.split(tn)
+            #split extension
+            #again ext is empty if there is none
+            #(unles there is a dot in the filename...) todo?
+            t_name,ext=os.path.splitext(name)
+            
+            #check if a path was given to a .csv file
+            if(not dat_path and not ext=='.csv'):
+                #generate using test_path
+                dat_path=os.path.join(test_path,'csv')
+                dat_file=os.path.join(dat_path,t_name+'.csv')
+                cp_path=os.path.join(test_path,'wav')
+            else:
+                cp_path=os.path.join(os.path.dirname(dat_path))
+                dat_file=tn
+            
+            #check if we were given an explicit wav directory
+            if(wd):
+                #use given path
+                cp_path=wd
+                #get test name from wave path
+                #normalize path first to remove a, possible, trailing slash
+                t_name=os.path.basename(os.path.normpath(wd))
+            else:
+                #otherwise get path to the wav dir
+                cp_path=os.path.join(cp_path,t_name)
+                
+            #put things into the test info structure
+            self.test_info[t_name]={'data_path':dat_path,'data_file':dat_file,'cp_path':cp_path}
+            #append name to list of names
+            self.test_names.append(t_name)
+        
         self.fs = fs
         
         #TODO: Add audio length - store max we've seen, 
         self.max_audio_length = None
         
-        if(type(self.test_names) is str):
-            self.test_names = [self.test_names]
         
         self.test_dat, self.cps = self.load_sessions()
         
@@ -37,14 +80,14 @@ class PSuD_process():
         
         
     def load_session(self,test_name):
-        fname = "{}.csv".format(os.path.join(self.data_path,test_name))
+        fname = self.test_info[test_name]['data_file']
         test = pd.read_csv(fname)
         # Store test name as column in test
         test['name'] = test_name
         test_clips = self.get_clip_names(test)
         test_cp = {}
         for clip in test_clips:
-            fpath = os.path.join(self.cp_path,test_name,"Tx_{}.csv".format(clip))
+            fpath = os.path.join(self.test_info[test_name]['cp_path'],"Tx_{}.csv".format(clip))
             test_cp[clip] = pd.read_csv(fpath)
         return((test,test_cp))
     
