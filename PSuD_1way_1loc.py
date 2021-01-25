@@ -317,6 +317,9 @@ class PSuD:
                 info={}
             #finish log entry
             mcvqoe.post(outdir=self.outdir,info=info)
+            
+        print(f'Test complete data saved in \'{self.data_filename}\'')
+            
         return(base_filename)
         
     def process_audio(self,clip_index,fname):
