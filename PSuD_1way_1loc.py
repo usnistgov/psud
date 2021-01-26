@@ -10,6 +10,8 @@ import time
 from scipy.interpolate import interp1d
 import scipy.io.wavfile as wav
 import warnings
+import csv
+from distutils.util import strtobool
 
 import mcvqoe
 from abcmrt import ABC_MRT16
@@ -38,8 +40,11 @@ def align_audio(tx,rx,m2e_latency,fs):
         
         
 class PSuD:
-    
-    data_fields=("Timestamp","Filename","m2e_latency","Over_runs","Under_runs")
+
+    #on load conversion to datetime object fails for some reason
+    #TODO : figure out how to fix this, string works for now but this should work too:
+    #row[k]=datetime.datetime.strptime(row[k],'%d-%b-%Y_%H-%M-%S')
+    data_fields={"Timestamp":str,"Filename":str,"m2e_latency":float,"good_M2E":(lambda s: bool(strtobool(s))),"Over_runs":int,"Under_runs":int}
     no_log=('y','clipi','data_dir','wav_data_dir','csv_data_dir','cutpoints','data_fields','time_expand_samples','num_keywords')
     
     def __init__(self,
@@ -93,6 +98,8 @@ class PSuD:
         self.y=[]
         #list for cutpoints
         self.cutpoints=[]
+        #list for word spacing
+        self.keyword_spacings=[]
         
         for f in self.audioFiles:
             #make full path from relative paths
@@ -112,6 +119,24 @@ class PSuD:
             cp=mcvqoe.load_cp(fcsv)
             #add cutpoints to array
             self.cutpoints.append(cp)
+            
+            starts=[]
+            ends=[]
+            lens=[]
+            for cpw in cp:
+                if(np.isnan(cpw['Clip'])):
+                    #check if this is the first clip, if so skip
+                    #TODO: deal with this better?
+                    if(ends):
+                        ends[-1]=cpw['End']
+                        lens[-1]=ends[-1]-starts[-1]
+                else:
+                    starts.append(cpw['Start'])
+                    ends.append(cpw['End'])
+                    lens.append(ends[-1]-starts[-1])
+            
+            #word spacing is minimum distance converted to seconds
+            self.keyword_spacings.append(min(lens)/self.fs)
             
     def set_time_expand(self,t_ex):
         self.time_expand_samples=np.array(t_ex)
@@ -134,8 +159,8 @@ class PSuD:
             self.num_keywords=max(n,self.num_keywords)
             
     def csv_header_fmt(self):
-        hdr=','.join(self.data_fields)
-        fmt="{timestamp},{name},{m2e},{overrun},{underrun}"
+        hdr=','.join(self.data_fields.keys())
+        fmt='{'+'},{'.join(self.data_fields.keys())+'}'
         for word in range(self.num_keywords):
             hdr+=f',W{word}_Int'
             fmt+=f',{{intel[{word}]}}'
@@ -267,10 +292,10 @@ class PSuD:
 
                 #---------------------------[Write File]---------------------------
                 
-                trial_dat['name']      = clip_names[self.clipi[trial]]
-                trial_dat['timestamp'] = ts
-                trial_dat['overrun']   = 0
-                trial_dat['underrun']  = 0
+                trial_dat['Filename']   = clip_names[self.clipi[trial]]
+                trial_dat['Timestamp']  = ts
+                trial_dat['Over_runs']  = 0
+                trial_dat['Under_runs'] = 0
                 
                 with open(temp_data_filename,'at') as f:
                     f.write(dat_format.format(**trial_dat))
@@ -292,6 +317,9 @@ class PSuD:
                 info={}
             #finish log entry
             mcvqoe.post(outdir=self.outdir,info=info)
+            
+        print(f'Test complete data saved in \'{self.data_filename}\'')
+            
         return(base_filename)
         
     def process_audio(self,clip_index,fname):
@@ -305,23 +333,25 @@ class PSuD:
         dly_res = mcvqoe.ITS_delay_est(self.y[clip_index], rec_dat, "f", fsamp=self.fs,min_corr=self.m2e_min_corr)
         
         if(not np.any(dly_res)):
-            #bad M2E, everything sucks, no info
-            estimated_m2e_latency=None
-            success=np.empty(self.num_keywords)
-            success.fill(None)
+            #M2E estimation did not go super well, try again but restrict M2E bounds to keyword spacing
+            dly_res = mcvqoe.ITS_delay_est(self.y[clip_index], rec_dat, "f", fsamp=self.fs,dlyBounds=(0,self.keyword_spacings[clip_index]))
+            
+            good_m2e=False
         else:
-        
-            estimated_m2e_latency=dly_res[1] / self.fs
+            good_m2e=True
+             
+        estimated_m2e_latency=dly_res[1] / self.fs
 
         #---------------------------[align audio]---------------------------
         
-            rec_dat_no_latency = align_audio(self.y[clip_index],rec_dat,estimated_m2e_latency,self.fs)
+        rec_dat_no_latency = align_audio(self.y[clip_index],rec_dat,estimated_m2e_latency,self.fs)
             
         #---------------------[Compute intelligibility]---------------------
         
-            success=self.compute_intellligibility(rec_dat_no_latency,self.cutpoints[clip_index])
+        success=self.compute_intellligibility(rec_dat_no_latency,self.cutpoints[clip_index])
+
             
-        return {'m2e':estimated_m2e_latency,'intel':success}
+        return {'m2e_latency':estimated_m2e_latency,'intel':success,'good_M2E':good_m2e}
 
     def compute_intellligibility(self,audio,cutpoints):
         #----------------[Cut audio and perform time expand]----------------
@@ -358,39 +388,30 @@ class PSuD:
         with open(fname,'rt') as csv_f:
             #create dict reader
             reader=csv.DictReader(csv_f)
-            #check for correct fieldnames
-            for n,field in enumerate(reader.fieldnames):
-                if(n<len(self.data_fields)):
-                    #standard column
-                    expected_field=self.data_fields[n]
-                else:
-                    #word column
-                    expected_field=f'W{n-len(self.data_fields)}_Int'
-                #check for a match
-                if(field!=expected_field):
-                    raise RuntimeError(f'Got \'{field}\' for column name but expected \'{expected_field}\'')
             #create empty list
             data=[]
             #create set for audio clips
             clips=set()
             for row in reader:
-                #convert values to float
+                #convert values proper datatype
                 for k in row:
-                    #check for timestamp field
-                    if(k==self.data_fields[0]):
-                        #convert to datetime object
-                        #well this fails for some reason, I guess a string is not horrible...
-                        #TODO : figure out how to fix this
-                        #row[k]=datetime.datetime.strptime(row[k],'%d-%b-%Y_%H-%M-%S')
-                        pass
-                    #check for clip name field
-                    elif(k==self.data_fields[1]):
+                    #check for clip name
+                    if(k=='Filename'):
+                        #save clips
                         clips.add(row[k])
-                    else:
-                        #convert to float
+                    try:
+                        #check for None field
+                        if(row[k]=='None'):
+                            #handle None correcly
+                            row[k]=None
+                        else:
+                            #convert using function from data_fields
+                            self.data_fields[k](row[k])
+                    except KeyError:
+                        #not in data_fields, convert to float
                         row[k]=float(row[k]);
-                    
-                #append row to 
+                        
+                #append row to data
                 data.append(row)
         
         #set audio file names to Tx file names

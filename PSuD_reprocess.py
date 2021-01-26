@@ -7,10 +7,12 @@ import os.path
 import scipy.io.wavfile
 import csv
 import sys
+from PSuD_process import PSuD_process 
+import tempfile
 
 import mcvqoe
 
-def reprocess(datafile,outfile=None,test_obj=None):
+def reprocess(datafile,f_out,test_obj=None):
     #---------------------[Create Test object if not given]---------------------
     
     if(not test_obj):
@@ -35,35 +37,24 @@ def reprocess(datafile,outfile=None,test_obj=None):
     
     header,dat_format=test_obj.csv_header_fmt()
     
-    with (os.fdopen(os.dup(sys.stdout.fileno()), 'w') if not outfile else open(outfile, 'w')) as f_out:
+    f_out.write(header)
+    
+    for n,trial in enumerate(test_dat):
         
-        f_out.write(header)
+        #find clip index
+        clip_index=test_obj.find_clip_index(trial['Filename'])
+        #create clip file name
+        clip_name='Rx'+str(n+1)+'_'+trial['Filename']+'.wav'
         
-        for n,trial in enumerate(test_dat):
-            
-            #find clip index
-            clip_index=test_obj.find_clip_index(trial['Filename'])
-            #create clip file name
-            clip_name='Rx'+str(n+1)+'_'+trial['Filename']+'.wav'
-            #load audio file
-            fs_file, rec_dat = scipy.io.wavfile.read(os.path.join(test_obj.audioPath,clip_name))
-            if(test_obj.fs != fs_file):
-                raise RuntimeError('Recorded sample rate does not match!')
-                
-            #------------------------[calculate M2E]------------------------
-            estimated_m2e_latency = mcvqoe.ITS_delay_est(test_obj.y[clip_index], rec_dat, "f", fsamp=test_obj.fs)[1] / test_obj.fs
+        new_dat=test_obj.process_audio(clip_index,os.path.join(test_obj.audioPath,clip_name))
+        
+        #overwrite new data with old and merge
+        merged_dat={**trial, **new_dat}
+        
 
-            #---------------------------[align audio]---------------------------
+        f_out.write(dat_format.format(**merged_dat))
             
-            rec_dat_no_latency = PSuD_1way_1loc.align_audio(test_obj.y[clip_index],rec_dat,estimated_m2e_latency,test_obj.fs)
-            
-            #---------------------[Compute intelligibility]---------------------
-            
-            success=test_obj.compute_intellligibility(rec_dat_no_latency,test_obj.cutpoints[clip_index])
-
-            #---------------------------[Write File]---------------------------
-
-            f_out.write(dat_format.format(timestamp=trial['Timestamp'],name=trial['Filename'],m2e=estimated_m2e_latency,intel=success,overrun=trial['Over_runs'],underrun=trial['Under_runs']))
+    return test_obj.audioPath
 
 
 
@@ -89,7 +80,14 @@ if __name__ == "__main__":
                         help='Time in seconds of audio to add before and after keywords before '+
                         'sending them to ABC_MRT. Can be one value for a symetric expansion or '+
                         'two values for an asymmetric expansion')
-                                                
+    parser.add_argument('--msg-eval',
+                        type = list,
+                        default = [1,5,10],
+                        help = "Message lengths to evalue PSuD at upon completion")      
+    parser.add_argument('--intell-threshold',
+                        type = float,
+                        default = 0.5,
+                        help = "Intelligibility success threshold")                                                              
     #-----------------------------[Parse arguments]-----------------------------
 
     args = parser.parse_args()
@@ -97,5 +95,36 @@ if __name__ == "__main__":
     #set time expand
     test_obj.set_time_expand(args.time_expand)
     
-    reprocess(args.datafile,args.outfile,test_obj)
-    
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        
+        if(args.outfile):
+            out_name=args.outfile
+            print_outf=False
+        else:
+            out_name=os.path.join(tmp_dir,'tmp.csv')
+            print_outf=True
+            
+        with open(out_name,'wt') as out_file:
+            wav_dir=reprocess(args.datafile,out_file,test_obj)
+            
+        if(print_outf):
+            with open(out_name,'rt') as out_file:
+                dat=out_file.read()
+            print(dat)
+            
+        
+        #--------------------------------[Evaluate Test]---------------------------
+        # TODO: Make this fs determination smarter
+        t_proc = PSuD_process(out_name,wav_dirs=wav_dir,fs = 48e3)
+        print("----Intelligibility Success threshold = {}----".format(args.intell_threshold))
+        print("Results shown as Psud(t) = mean, (95% C.I.)")
+        
+        for msg_len in args.msg_eval:
+                psud_m,psud_ci = t_proc.eval_psud(args.intell_threshold,msg_len)
+            
+                results_str = "PSuD({}) = {:.4f}, ({:.4f},{:.4f})"
+                results = results_str.format(msg_len,
+                                    psud_m,
+                                    psud_ci[0],
+                                    psud_ci[1])
+                print(results)
