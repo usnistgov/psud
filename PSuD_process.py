@@ -14,6 +14,10 @@ import mcvqoe.simulation
 import argparse
 
 class PSuD_process():
+    #TODO: Write this
+    """TODO: Write docstring
+    
+    """
     #TODO: Add documentation and docstrings to all methods    
     #TODO: Change to only take one path, assume has csv and wav in it
     def __init__(self,test_names, test_path='',fs = 48e3):
@@ -37,6 +41,23 @@ class PSuD_process():
         
         
     def load_session(self,test_name):
+        """
+        Load a PSuD data session
+
+        Parameters
+        ----------
+        test_name : str
+            DESCRIPTION.
+
+        Returns
+        -------
+        pd.DataFrame
+            Session results
+            
+        dict
+            Dictionary with cutpoints for each clip
+
+        """
         fname = "{}.csv".format(os.path.join(self.data_path,test_name))
         test = pd.read_csv(fname)
         # Store test name as column in test
@@ -49,6 +70,18 @@ class PSuD_process():
         return((test,test_cp))
     
     def load_sessions(self):
+        """
+        Load and consolidate multiple PSuD Data Sessions for a given Test
+
+        Returns
+        -------
+        pd.DataFrame
+            Results from all sessions in self.test_names
+            
+        dict
+            Dictionary of each test, with cutpoints for each clip for each test.
+
+        """
         tests = pd.DataFrame()
         tests_cp = {}
         for test_name in self.test_names:
@@ -68,18 +101,62 @@ class PSuD_process():
         return((tests,tests_cp))
     
     def get_clip_names(self,test_dat):
+        """
+        Extract audio clip names from a session
+        
+        Parameters
+        ----------
+        test_dat : pd.DataFrame
+            Data for a PSuD session
+            
+        Returns
+        -------
+        np.array
+            Array of clip names
+            
+        """
         # Function to extract clip names from a session
         
         clip_names = np.unique(test_dat['Filename'])
         return(clip_names)
     
     def get_cutpoints(self,clip, test_name):
+        """
+        Load cutpoints for a given audio clip
+
+        Parameters
+        ----------
+        clip : str
+            Name of audio clip.
+        test_name : str
+            Name of test audio clip used in.
+
+        Returns
+        -------
+        pd.DataFrame
+            Cutpoints for clip
+
+        """
         # Get cutpoints for clipname
         fpath = "{}.csv".format(os.path.join(self.cp_path,test_name,clip))
         cp = pd.read_csv(fpath)
         return(cp)
     
     def get_test_chains(self,threshold):
+        """
+        Determine longest successful chain of words for each trial of a test
+
+        Parameters
+        ----------
+        threshold : float
+            Intelligibility value used to determine whether a word was delivered successfully or not. Between [0,1]
+
+        Returns
+        -------
+        np.array
+            List of longest chain of successful words for each trial of a test
+
+        """
         chains = []
         times = []
         for ix,trial in self.test_dat.iterrows():
@@ -95,7 +172,22 @@ class PSuD_process():
         return(np_chains)
     
     def get_trial_chain_length(self,trial, threshold):
-        
+        """
+        Determine number of successfully deliverd words in a trial
+
+        Parameters
+        ----------
+        trial : pd.Series
+            Row of data from a session file.
+        threshold : float
+            Intelligibility value used to determine whether a word was delivered successfully or not. Between [0,1]
+
+        Returns
+        -------
+        int
+            Number of words that achieved intelligibility greater than threshold
+
+        """
         # flag to determine if chain is still active
         chain = True
         # Length of current chain
@@ -116,6 +208,22 @@ class PSuD_process():
         return(chain_len)
     
     def chain2time(self,clip_cp,chain_length):
+        """
+        Convert word chain length to length in seconds
+
+        Parameters
+        ----------
+        clip_cp : pd.DataFrame
+            Cutpoints for the audio clip used for a given trial.
+        chain_length : TYPE
+            Number of consecutive words received successfully for a given trial.
+
+        Returns
+        -------
+        float
+            Time in seconds associated with last word or silent section in the audio clip before intelligibility threshold was not achieved.
+
+        """
         if(chain_length == 0):
             return(0)
         
@@ -145,7 +253,34 @@ class PSuD_process():
         return(chain_time)
         
     def eval_psud(self,threshold,msg_len,p=0.95,R=1e4):
+        """
+        Determine the probability of successful delivery of a message
+
+        Probability of successful delivery measures the probability of 
+        successfully delivering a message of length msg_len. A message is 
+        considered to have been successfully delivered it achieved an 
+        intelligibility that is greater than threshold.
         
+        Parameters
+        ----------
+        threshold : float
+            Intelligibility value used to determine whether a word was delivered successfully or not. Between [0,1]
+        msg_len : float
+            Length of the message.
+        p : float, optional
+            Level of confidence to use in confidence interval calculation. Value must be in [0,1]. The default is 0.95.
+        R : int, optional
+            Number of repetitions used in uncertainy calculation using bootstrap resampling. The default is 1e4.
+
+        Returns
+        -------
+        float
+            probability of successful delivery. Between 0 and 1.
+            
+        np.array
+            Confidence interval of level p for estimate.
+
+        """
         # TODO: if msg_len > self.max_audio_length report NaN
         
         # Calculate test chains for this threshold, if we don't already have them
