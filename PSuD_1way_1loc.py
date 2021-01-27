@@ -570,7 +570,7 @@ class PSuD:
         
         for cpw in cutpoints:
             if(not np.isnan(cpw['Clip'])):
-                #calcualte start and end points
+                #calculate start and end points
                 start=np.clip(cpw['Start']-self.time_expand_samples[0],0,max_idx)
                 end  =np.clip(cpw['End']  +self.time_expand_samples[1],0,max_idx)
                 #add word audio to array
