@@ -170,8 +170,28 @@ class PSuD:
         self.get_post_notes=get_post_notes
         self.intell_est=intell_est
         
-    #load audio files for use in test
     def load_audio(self):
+        """
+        load audio files for use in test
+        
+        this loads audio from self.audioFiles and stores values in self.y,
+        self.cutpoints and self.keyword_spacings
+        In most cases run() will call this automatically but, it can be called
+        in the case that self.audioFiles is changed after run() is called
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+
+        Raises
+        ------
+        ValueError
+            If self.audioFiles is empty
+        RuntimeError
+            If clip fs doesn't match self.fs
+        """
     
         #check that audio files is not empty
         if not self.audioFiles:
@@ -223,6 +243,17 @@ class PSuD:
             self.keyword_spacings.append(min(lens)/self.fs)
             
     def set_time_expand(self,t_ex):
+        """
+        convert time expand from seconds to samples and ensure a 2 element vector
+
+        Parameters
+        ----------
+        t_ex :
+            time expand values in seconds
+        Returns
+        -------
+
+        """
         self.time_expand_samples=np.array(t_ex)
         
         if(len(self.time_expand_samples)==1):
@@ -233,6 +264,17 @@ class PSuD:
         self.time_expand_samples=np.ceil(self.time_expand_samples*self.fs).astype(int)
         
     def audio_clip_check(self):
+    #TODO : this could probably be moved into load_audio, also not 100% sure this name makes sense
+        """
+        find the number of keywords in clips
+
+        Parameters
+        ----------
+        
+        Returns
+        -------
+        
+        """
         #number of keyword columns to have in the .csv file
         self.num_keywords=0
         #check cutpoints and count keywaords
@@ -243,6 +285,22 @@ class PSuD:
             self.num_keywords=max(n,self.num_keywords)
             
     def csv_header_fmt(self):
+        """
+        generate header and format for .csv files
+        
+        This generates a header for .csv files along with a format (that can be
+        used with str.format()) to generate each row in the .csv
+        
+        Parameters
+        ----------
+        
+        Returns
+        -------
+        hdr : string
+            csv header string
+        fmt : string
+            format string for data lines for the .csv file
+        """
         hdr=','.join(self.data_fields.keys())
         fmt='{'+'},{'.join(self.data_fields.keys())+'}'
         for word in range(self.num_keywords):
@@ -255,6 +313,16 @@ class PSuD:
         return (hdr,fmt)
     
     def run(self):
+        """
+        run a test with the properties of the class
+
+        Returns
+        -------
+        string
+            name of the .csv file without path or extension
+            
+
+        """
         #---------------------------[Set time expand]---------------------------
         self.set_time_expand(self.time_expand)
         #---------------------[Load Audio Files if Needed]---------------------
@@ -428,6 +496,22 @@ class PSuD:
         return(base_filename)
         
     def process_audio(self,clip_index,fname):
+        """
+        estimate mouth to ear latency and intelligibility for an audio clip
+
+        Parameters
+        ----------
+        clip_index : int
+            index of the matching transmit clip. can be found with find_clip_index
+        fname : str
+            audio file to process
+
+        Returns
+        -------
+        dict
+            returns a dictionary with estimated values
+
+        """
         
         #---------------------[Load in recorded audio]---------------------
         fs,rec_dat = scipy.io.wavfile.read(fname)
@@ -459,6 +543,22 @@ class PSuD:
         return {'m2e_latency':estimated_m2e_latency,'intel':success,'good_M2E':good_m2e}
 
     def compute_intellligibility(self,audio,cutpoints):
+        """
+        estimate intelligibility for audio
+
+        Parameters
+        ----------
+        audio : audio vector
+            time aligned audio to estimate intelligibility on
+        cutpoints : list of dicts
+            cutpoints for audio file
+
+        Returns
+        -------
+        numpy.array
+            returns a vector of intelligibility values padded to self.num_keywords
+
+        """
         #----------------[Cut audio and perform time expand]----------------
 
         #array of audio data for each word
@@ -489,6 +589,22 @@ class PSuD:
         return success_pad
         
     def load_test_data(self,fname,load_audio=True):
+        """
+        load test data from .csv file
+
+        Parameters
+        ----------
+        fname : string
+            filename to load
+        load_audio : bool, default=True
+            if True, finds and loads audio clips and cutpoints based on fname
+
+        Returns
+        -------
+        list of dicts
+            returns data from the .csv file
+
+        """
             
         with open(fname,'rt') as csv_f:
             #create dict reader
@@ -537,6 +653,20 @@ class PSuD:
         
     #get the clip index given a partial clip name
     def find_clip_index(self,name):
+        """
+        find the inex of the matching transmit clip
+
+        Parameters
+        ----------
+        name : string
+            base name of audio clip
+
+        Returns
+        -------
+        int
+            index of matching tx clip
+
+        """
         #get all matching indicies
         match=[idx for idx,clip in enumerate(self.audioFiles) if name in clip]
         #check that a match was found
@@ -549,6 +679,22 @@ class PSuD:
         return match[0]
         
     def post_process(self,test_dat,fname,audio_path):
+        """
+        process csv data
+
+        Parameters
+        ----------
+        test_data : list of dicts
+            csv data for trials to process
+        fname : string
+            file name to write processed data to
+        audio_path : string
+            where to look for recorded audio clips
+
+        Returns
+        -------
+
+        """
 
         #get .csv header and data format
         header,dat_format=self.csv_header_fmt()
