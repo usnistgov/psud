@@ -40,6 +40,88 @@ def align_audio(tx,rx,m2e_latency,fs):
         
         
 class PSuD:
+    """
+    Class to run and reprocess Probability of Successful Delivery tests
+
+    ...
+
+    Attributes
+    ----------
+
+    audioFiles : list
+        List of names of audio files. relative paths are relative to audioPath
+    audioPath : string
+        Path where audio is stored
+    overPlay : float
+        Number of extra seconds of audio to record at the end of a trial
+    trials : int
+        Number of times audio will be run through the system in the run method
+    blockSize : int
+        Size of blocks to use for audio play/record
+    bufSize : int
+        Size of buffer to use for audio play/record
+    outdir : string
+        Base directory where data is stored.
+    ri : mcvqoe.RadioInterface or mcvqoe.QoEsim
+        Object to use to key the audio channel
+    info : dict
+        Dictionary with test info to for the log entry
+    fs : int
+        Sample rate in Hz of audio. Only 48000 is supported at this time.
+    ptt_wait : float
+        Time to wait, in seconds, between keying the channel and playing audio
+    ptt_gap : float
+        Time to pause, in seconds, between one trial and the next
+    rng : Generator
+        Generator to use for random numbers
+    audioInterface : mcvqoe.AudioPlayer or mcvqoe.simulation.QoEsim
+        interface to use to play and record audio on the communication channel
+    mrt : abcmrt.ABC_MRT16
+        ABC_MRT object to use for intelligibility
+    time_expand : 1 or 2 element list or tuple of floats
+        Amount of time, in seconds, of extra audio to use for intelligibility
+        estimation. If only one value is given, it is used both before and after
+        the clip
+    m2e_min_corr : float
+        minimum correlation to accept for a good mouth to ear measurement.
+        Values range from 1 (perfect correlation) to 0 (no correlation)
+    get_post_notes : function or None
+        Function to call to get notes at the end of the test. Often set to
+        mcvqoe.post_test to get notes with a gui popup.
+        lambda : mcvqoe.post_test(error_only=True) can be used if notes should
+        only be gathered when there is an error
+    intell_est : string
+        String to control when intelligibility and mouth to ear estimations are
+        done. Should be one of: 'trial' to estimate them after each trial is
+        complete,'post' will estimate them after all trials have finished,
+        'none' will not compute intelligibility or M2E at all and will store
+        dummy values in the .csv file. Any other value is treated the same as
+        'none'
+    data_fields : dict
+        static property that has info on the standard .csv columns. Column names
+        are dictionary keys and the values are conversion functions to get from
+        string to the appropriate type. This should not be modified in most
+        cases
+    no_log : tuple of strings
+        static property that is a tuple of property names that will not be added
+        to the 'Arguments' field in the log. This should not be modified in most
+        cases
+
+    Methods
+    -------
+
+    run()
+        run a test with the properties of the class
+    load_test_data(fname,load_audio=True)
+        load dat from a .csv file. If load_audio is true then the Tx clips from
+        the wav dir is loaded into the class. returns the .csv data as a list of
+        dicts
+    post_process(test_dat,fname,audio_path)
+        process data from load_test_dat and write a new .csv file.
+
+    """
+
+
 
     #on load conversion to datetime object fails for some reason
     #TODO : figure out how to fix this, string works for now but this should work too:
