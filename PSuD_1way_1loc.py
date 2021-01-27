@@ -529,7 +529,7 @@ if __name__ == "__main__":
                         'sending them to ABC_MRT. Can be one value for a symmetric expansion or '+
                         'two values for an asymmetric expansion')
                         
-    parser.add_argument('--intell-est', default=test_obj.intell_est,dest='intell_est',action='store_const',const='runtime',
+    parser.add_argument('--intell-est', default=test_obj.intell_est,dest='intell_est',action='store_const',const='trial',
                         help='Compute intelligibility estimation for audio at end of each trial')
     parser.add_argument('--post-intell-est',dest='intell_est',action='store_const',const='post',
                         help='Compute intelligibility on audio after test is complete')
