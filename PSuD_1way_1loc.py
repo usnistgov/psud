@@ -97,6 +97,9 @@ class PSuD:
         'none' will not compute intelligibility or M2E at all and will store
         dummy values in the .csv file. Any other value is treated the same as
         'none'
+    split_audio_dest : string or None
+        if this is a string it holds the path where individually cut word clips
+        are stored. this directory will be created if it does not exist
     data_fields : dict
         static property that has info on the standard .csv columns. Column names
         are dictionary keys and the values are conversion functions to get from
@@ -148,7 +151,8 @@ class PSuD:
                  time_expand = [100e-3 - 0.11e-3, 0.11e-3],
                  m2e_min_corr = 0.76,
                  get_post_notes = None,
-                 intell_est='trial'):
+                 intell_est='trial',
+                 split_audio_dest=None):
         #set default values
         self.audioFiles=audioFiles
         self.audioPath=audioPath
@@ -169,6 +173,7 @@ class PSuD:
         self.m2e_min_corr=m2e_min_corr
         self.get_post_notes=get_post_notes
         self.intell_est=intell_est
+        self.split_audio_dest=split_audio_dest
         
     def load_audio(self):
         """
@@ -197,6 +202,11 @@ class PSuD:
         if not self.audioFiles:
             #TODO : is this the right error to use here??
             raise ValueError('Expected self.audioFiles to not be empty')
+
+        #check if we are making split audio
+        if(self.split_audio_dest):
+            #make sure that splid audio directory exists
+            os.makedirs(self.split_audio_dest,exist_ok=True)
 
         #list for input speech
         self.y=[]
@@ -537,12 +547,18 @@ class PSuD:
             
         #---------------------[Compute intelligibility]---------------------
         
-        success=self.compute_intellligibility(rec_dat_no_latency,self.cutpoints[clip_index])
+        #strip filename for basename in case of split clips
+        if(isinstance(self.split_audio_dest, str)):
+            (bname,_)=os.path.splitext(os.path.basename(fname))
+        else:
+            bname=None
+
+        success=self.compute_intellligibility(rec_dat_no_latency,self.cutpoints[clip_index],clip_base=bname)
 
             
         return {'m2e_latency':estimated_m2e_latency,'intel':success,'good_M2E':good_m2e}
 
-    def compute_intellligibility(self,audio,cutpoints):
+    def compute_intellligibility(self,audio,cutpoints,clip_base=None):
         """
         estimate intelligibility for audio
 
@@ -552,6 +568,8 @@ class PSuD:
             time aligned audio to estimate intelligibility on
         cutpoints : list of dicts
             cutpoints for audio file
+        clip_base : str or None, default=None
+            basename for split clips. Split clips will not be written if None
 
         Returns
         -------
@@ -568,7 +586,7 @@ class PSuD:
         #maximum index
         max_idx=len(audio)-1
         
-        for cpw in cutpoints:
+        for cp_num,cpw in enumerate(cutpoints):
             if(not np.isnan(cpw['Clip'])):
                 #calculate start and end points
                 start=np.clip(cpw['Start']-self.time_expand_samples[0],0,max_idx)
@@ -577,6 +595,11 @@ class PSuD:
                 word_audio.append(audio[start:end])
                 #add word num to array
                 word_num.append(cpw['Clip'])
+
+                if(clip_base and isinstance(self.split_audio_dest, str)):
+                    outname=os.path.join(self.split_audio_dest,f'{clip_base}_cp{cp_num}_w{cpw["Clip"]}.wav')
+                    #write out audio
+                    scipy.io.wavfile.write(outname, int(self.fs), audio[start:end])
 
         #---------------------[Compute intelligibility]---------------------
         phi_hat,success=self.mrt.process(word_audio,word_num)
