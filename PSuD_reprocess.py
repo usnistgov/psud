@@ -12,52 +12,6 @@ import tempfile
 
 import mcvqoe
 
-def reprocess(datafile,f_out,test_obj=None):
-    #---------------------[Create Test object if not given]---------------------
-    
-    if(not test_obj):
-        test_obj=PSuD_1way_1loc.PSuD()
-        #setup time expand values
-        test_obj.set_time_expand(test_obj.time_expand)
-     
-    #TODO : do we really need this?
-    #set wait times to zero for reprocess
-    test_obj.ptt_wait=0
-    test_obj.ptt_gap=0
-    
-    #set dummy functions for hardware we don't have
-    test_obj.play_record_func=None
-    test_obj.ri=None
-
-    #---------------------------[Load Data from file]---------------------------
-
-    test_dat=test_obj.load_test_data(datafile)
-    
-    #-------------------------[Generate csv header]-------------------------
-    
-    header,dat_format=test_obj.csv_header_fmt()
-    
-    f_out.write(header)
-    
-    for n,trial in enumerate(test_dat):
-        
-        #find clip index
-        clip_index=test_obj.find_clip_index(trial['Filename'])
-        #create clip file name
-        clip_name='Rx'+str(n+1)+'_'+trial['Filename']+'.wav'
-        
-        new_dat=test_obj.process_audio(clip_index,os.path.join(test_obj.audioPath,clip_name))
-        
-        #overwrite new data with old and merge
-        merged_dat={**trial, **new_dat}
-        
-
-        f_out.write(dat_format.format(**merged_dat))
-            
-    return test_obj.audioPath
-
-
-
 #main function 
 if __name__ == "__main__":
 
@@ -104,8 +58,10 @@ if __name__ == "__main__":
             out_name=os.path.join(tmp_dir,'tmp.csv')
             print_outf=True
             
-        with open(out_name,'wt') as out_file:
-            wav_dir=reprocess(args.datafile,out_file,test_obj)
+        #read in test data
+        test_dat=test_obj.load_test_data(args.datafile)
+            
+        test_obj.post_process(test_dat,out_name,test_obj.audioPath)
             
         if(print_outf):
             with open(out_name,'rt') as out_file:
@@ -115,7 +71,7 @@ if __name__ == "__main__":
         
         #--------------------------------[Evaluate Test]---------------------------
         # TODO: Make this fs determination smarter
-        t_proc = PSuD_process(out_name,wav_dirs=wav_dir,fs = 48e3)
+        t_proc = PSuD_process(out_name,wav_dirs=test_obj.audioPath,fs = 48e3)
         print("----Intelligibility Success threshold = {}----".format(args.intell_threshold))
         print("Results shown as Psud(t) = mean, (95% C.I.)")
         

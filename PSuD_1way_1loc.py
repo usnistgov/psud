@@ -65,7 +65,8 @@ class PSuD:
                  mrt= ABC_MRT16(),
                  time_expand = [100e-3 - 0.11e-3, 0.11e-3],
                  m2e_min_corr = 0.76,
-                 get_post_notes = None):
+                 get_post_notes = None,
+                 intell_est='trial'):
         #set default values
         self.audioFiles=audioFiles
         self.audioPath=audioPath
@@ -85,6 +86,7 @@ class PSuD:
         self.time_expand=time_expand
         self.m2e_min_corr=m2e_min_corr
         self.get_post_notes=get_post_notes
+        self.intell_est=intell_est
         
     #load audio files for use in test
     def load_audio(self):
@@ -288,7 +290,15 @@ class PSuD:
                 
                 #-------------------------[Process Audio]-------------------------
                 
-                trial_dat=self.process_audio(clip_index,clip_name)
+                #check if we should process audio
+                if(self.intell_est=='trial'):
+                    trial_dat=self.process_audio(clip_index,clip_name)
+                else:
+                    #skip processing and give dummy values
+                    success=np.empty(self.num_keywords)
+                    success.fill(np.nan)
+                    #return dummy values to fill in the .csv for now
+                    trial_dat={'m2e_latency':None,'intel':success,'good_M2E':False}
 
                 #---------------------------[Write File]---------------------------
                 
@@ -302,8 +312,21 @@ class PSuD:
                     
             #-------------------------------[Cleanup]-------------------------------
             
-            #move temp file to real file
-            shutil.move(temp_data_filename,self.data_filename)
+            if(self.intell_est=='post'):
+                #process audio from temp file into real file
+                print('processing test data')
+                
+                #load temp file data
+                test_dat=self.load_test_data(temp_data_filename,load_audio=False)
+                
+                #process data and write to final filename
+                self.post_process(test_dat,self.data_filename,wavdir)
+                
+                #remove temp file
+                os.remove(temp_data_filename)
+            else:
+                #move temp file to real file
+                shutil.move(temp_data_filename,self.data_filename)
             
             #---------------------------[Turn off RI LED]---------------------------
             
@@ -383,7 +406,7 @@ class PSuD:
         
         return success_pad
         
-    def load_test_data(self,fname):
+    def load_test_data(self,fname,load_audio=True):
             
         with open(fname,'rt') as csv_f:
             #create dict reader
@@ -414,17 +437,19 @@ class PSuD:
                 #append row to data
                 data.append(row)
         
-        #set audio file names to Tx file names
-        self.audioFiles=['Tx_'+name+'.wav' for name in clips]
-        
-        dat_name,_=os.path.splitext(os.path.basename(fname))
-        
-        #set audioPath based on filename
-        self.audioPath=os.path.join(os.path.dirname(os.path.dirname(fname)),'wav',dat_name)
-        
-        #load audio data from files
-        self.load_audio()
-        self.audio_clip_check()
+        #check if we should load audio
+        if(load_audio):
+            #set audio file names to Tx file names
+            self.audioFiles=['Tx_'+name+'.wav' for name in clips]
+            
+            dat_name,_=os.path.splitext(os.path.basename(fname))
+            
+            #set audioPath based on filename
+            self.audioPath=os.path.join(os.path.dirname(os.path.dirname(fname)),'wav',dat_name)
+            
+            #load audio data from files
+            self.load_audio()
+            self.audio_clip_check()
         
         return data
         
@@ -440,6 +465,30 @@ class PSuD:
             raise RuntimeError(f'multiple audio clips found matching \'{name}\' found in {self.audioFiles}')
         #return matching index
         return match[0]
+        
+    def post_process(self,test_dat,fname,audio_path):
+
+        #get .csv header and data format
+        header,dat_format=self.csv_header_fmt()
+        
+        with open(fname,'wt') as f_out:
+
+            f_out.write(header)
+
+            for n,trial in enumerate(test_dat):
+                
+                #find clip index
+                clip_index=self.find_clip_index(trial['Filename'])
+                #create clip file name
+                clip_name='Rx'+str(n+1)+'_'+trial['Filename']+'.wav'
+                
+                new_dat=self.process_audio(clip_index,os.path.join(audio_path,clip_name))
+                
+                #overwrite new data with old and merge
+                merged_dat={**trial, **new_dat}
+
+                #write line with new data
+                f_out.write(dat_format.format(**merged_dat))
 
 
 # %%---------------------------------[main]-----------------------------------
@@ -479,6 +528,13 @@ if __name__ == "__main__":
                         help='Time in seconds of audio to add before and after keywords before '+
                         'sending them to ABC_MRT. Can be one value for a symmetric expansion or '+
                         'two values for an asymmetric expansion')
+                        
+    parser.add_argument('--intell-est', default=test_obj.intell_est,dest='intell_est',action='store_const',const='runtime',
+                        help='Compute intelligibility estimation for audio at end of each trial')
+    parser.add_argument('--post-intell-est',dest='intell_est',action='store_const',const='post',
+                        help='Compute intelligibility on audio after test is complete')
+    parser.add_argument('--no-intell-est',dest='intell_est',action='store_const',const='none',
+                        help='don\'t compute intelligibility for audio')
     parser.add_argument('-o', '--outdir', default='', metavar='DIR',
                         help='Directory that is added to the output path for all files')
     parser.add_argument('-w', '--PTTWait', type=float, default=test_obj.ptt_wait, metavar='T',dest='ptt_wait',
