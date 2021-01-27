@@ -553,12 +553,12 @@ class PSuD:
         else:
             bname=None
 
-        success=self.compute_intellligibility(rec_dat_no_latency,self.cutpoints[clip_index],clip_base=bname)
+        success=self.compute_intelligibility(rec_dat_no_latency,self.cutpoints[clip_index],clip_base=bname)
 
             
         return {'m2e_latency':estimated_m2e_latency,'intel':success,'good_M2E':good_m2e}
 
-    def compute_intellligibility(self,audio,cutpoints,clip_base=None):
+    def compute_intelligibility(self,audio,cutpoints,clip_base=None):
         """
         estimate intelligibility for audio
 
