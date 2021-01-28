@@ -67,10 +67,10 @@ class PSuD_eval():
     """
     
     def __init__(self,test_names, test_path='',wav_dirs=[],fs = 48e3):
-        
-        if(type(test_names) is str):
+
+        if(isinstance(test_names,str)):
             test_names = [test_names]
-            if(type(wav_dirs) is str):
+            if(isinstance(wav_dirs,str)):
                 wav_dirs=[wav_dirs]
         
         if(not wav_dirs):

@@ -34,6 +34,8 @@ if __name__ == "__main__":
                         help='Time in seconds of audio to add before and after keywords before '+
                         'sending them to ABC_MRT. Can be one value for a symetric expansion or '+
                         'two values for an asymmetric expansion')
+    parser.add_argument('-s','--split-audio-folder', default=test_obj.split_audio_dest,type=str,dest='split_audio_dest',
+                        help='Folder to store single word clips to')
     parser.add_argument('--msg-eval',
                         type = list,
                         default = [1,5,10],
@@ -46,8 +48,10 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     
+    test_obj.split_audio_dest=args.split_audio_dest
+
     #set time expand
-    test_obj.set_time_expand(args.time_expand)
+    test_obj.time_expand=args.time_expand
     
     with tempfile.TemporaryDirectory() as tmp_dir:
         
