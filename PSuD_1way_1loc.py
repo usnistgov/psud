@@ -718,6 +718,10 @@ class PSuD:
 
         """
 
+        #Set time expand
+        self.set_time_expand(self.time_expand)
+        
+
         #get .csv header and data format
         header,dat_format=self.csv_header_fmt()
         

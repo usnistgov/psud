@@ -51,7 +51,7 @@ if __name__ == "__main__":
     test_obj.split_audio_dest=args.split_audio_dest
 
     #set time expand
-    test_obj.set_time_expand(args.time_expand)
+    test_obj.time_expand=args.time_expand
     
     with tempfile.TemporaryDirectory() as tmp_dir:
         
