@@ -90,13 +90,14 @@ class PSuD:
         mcvqoe.post_test to get notes with a gui popup.
         lambda : mcvqoe.post_test(error_only=True) can be used if notes should
         only be gathered when there is an error
-    intell_est : string
+    intell_est : {'trial','post','none'}
         String to control when intelligibility and mouth to ear estimations are
-        done. Should be one of: 'trial' to estimate them after each trial is
-        complete,'post' will estimate them after all trials have finished,
+        done. Should behavior is as follows:
+        'trial' to estimate them after each trial is complete
+        'post' will estimate them after all trials have finished,
         'none' will not compute intelligibility or M2E at all and will store
-        dummy values in the .csv file. Any other value is treated the same as
-        'none'
+            dummy values in the .csv file.
+        Any other value is treated the same as 'none'
     split_audio_dest : string or None
         if this is a string it holds the path where individually cut word clips
         are stored. this directory will be created if it does not exist
@@ -109,6 +110,28 @@ class PSuD:
         static property that is a tuple of property names that will not be added
         to the 'Arguments' field in the log. This should not be modified in most
         cases
+    y : list of audio vectors
+        Audio data for transmit clips. This is set by the load_audio function.
+    cutpoints : list of lists of dicts
+        list of cutpoints for corresponding transmit clips. This is set by the
+        load_audio function.
+    keyword_spacings : list of floats
+        time, in seconds, of the most closely spaced words in a clip. This is
+        set by the load_audio function.
+    time_expand_samples : two element list of ints
+        time expand values in samples. This is automatically generated from
+        time_expand in `run` and `post_process`. These values are used
+        internally to time expand the cutpoints
+    num_keywords : int
+        the maximum number of keywords in a single audio clip. This is used when
+        making the .csv as it dictates how many columns the .csv has for word
+        intelligibility. This is set automatically in the audio_clip_check
+        method and should not normally need to be set
+    clipi : list of ints
+        list containing the indices of the transmit clip that is used for each
+        trial. This is randomized in `run` before the test is run
+    data_filename : string
+        This is set in the `run` method to the path to the output .csv file.
 
     Methods
     -------
@@ -173,6 +196,46 @@ class PSuD:
                  get_post_notes = None,
                  intell_est='trial',
                  split_audio_dest=None):
+        """
+        create a new PSuD object
+        
+        Parameters
+        ----------
+        audioFiles : list, default=[]
+            List of names of audio files. relative paths are relative to audioPath
+        audioPath : string, default=''
+            Path where audio is stored
+        overPlay : float, default=1.0
+            Number of extra seconds of audio to record at the end of a trial
+        trials : trials, default=100
+            Number of times audio will be run through the system in the run method
+        blockSize : int, default=512
+            Size of blocks to use for audio play/record
+        bufSize : int, default=20
+            Size of buffer to use for audio play/record
+        outdir : str, default=''
+            Base directory where data is stored.
+        ri : mcvqoe.RadioInterface, default=None
+            Object to use to key the audio channel
+        info : dict, default={'Test Type':'default','Pre Test Notes':None}
+            Dictionary with test info to for the log entry
+        ptt_wait : float, default=0.68
+            Time to wait, in seconds, between keying the channel and playing audio
+        ptt_gap : float, default=3.1
+            Time to pause, in seconds, between one trial and the next
+        audioInterface : mcvqoe.AudioPlayer ,default=None
+            interface to use to play and record audio on the communication channel
+        time_expand : 1 or 2 element array, default=[100e-3 - 0.11e-3, 0.11e-3]
+            time to dilate cutpoints by
+        m2e_min_corr : float, default=0.76
+            minimum correlation to accept for a good mouth to ear measurement.
+        get_post_notes : function, default=None
+            Function to call to get notes at the end of the test.
+        intell_est : {'trial','post','none'}, default='trial'
+            Control when intelligibility and mouth to ear estimations are done.
+        split_audio_dest : string, default=None
+            path where individually cut word clips are stored
+        """
                  
         self.fs=48e3
         self.mrt= ABC_MRT16()
@@ -277,6 +340,9 @@ class PSuD:
     def set_time_expand(self,t_ex):
         """
         convert time expand from seconds to samples and ensure a 2 element vector
+        
+        This is called automatically in run and post_process and, normally, it
+        is not required to call set_time_expand manually
 
         Parameters
         ----------
@@ -299,6 +365,9 @@ class PSuD:
     #TODO : this could probably be moved into load_audio, also not 100% sure this name makes sense
         """
         find the number of keywords in clips
+        
+        this is called when loading audio in `run` and load_test_dat it should
+        not, normally, need to be called manually
 
         Parameters
         ----------
