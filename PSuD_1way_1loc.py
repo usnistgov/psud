@@ -165,7 +165,6 @@ class PSuD:
                  outdir='',
                  ri=None,
                  info={'Test Type':'default','Pre Test Notes':None},
-                 fs = 48e3,
                  ptt_wait=0.68,
                  ptt_gap=3.1,
                  audioInterface=None,
@@ -175,6 +174,7 @@ class PSuD:
                  intell_est='trial',
                  split_audio_dest=None):
                  
+        self.fs=48e3
         self.mrt= ABC_MRT16()
         self.rng=np.random.default_rng()
         #set default values
