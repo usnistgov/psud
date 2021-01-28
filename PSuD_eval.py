@@ -17,23 +17,7 @@ class PSuD_eval():
     
     """
     Class to evaluate Probability of Successful Delivery tests
-    
-    Parameters
-    ----------
-    test_names : str or list
-        Name of test, or list of names of tests.
-    
-    test_path : str
-        Path where test data is stored. Does not need to be passed if 
-        test_names contains full paths to files and wav_dirs is set as well.
-        
-    wav_dirs : str or list
-        Paths to directories containing audio for a PSuD test. Must contain 
-        cutpoints for audio clips in data files.
-        
-    fs : int
-        Sample rate for audio. Default is 48e3 Hz
-    
+       
     Attributes
     ----------
     test_names : list
@@ -67,7 +51,30 @@ class PSuD_eval():
     """
     
     def __init__(self,test_names, test_path='',wav_dirs=[],fs = 48e3):
+        """
+        Initialize PSuD_eval object.
 
+        Parameters
+        ----------
+        test_names : str or list
+            Name of test, or list of names of tests.
+        
+        test_path : str
+            Path where test data is stored. Does not need to be passed if 
+            test_names contains full paths to files and wav_dirs is set as well.
+            
+        wav_dirs : str or list
+            Paths to directories containing audio for a PSuD test. Must contain 
+            cutpoints for audio clips in data files.
+            
+        fs : int
+            Sample rate for audio. Default is 48e3 Hz
+
+        Returns
+        -------
+        None.
+
+        """
         if(isinstance(test_names,str)):
             test_names = [test_names]
             if(isinstance(wav_dirs,str)):
@@ -137,7 +144,7 @@ class PSuD_eval():
         Parameters
         ----------
         test_name : str
-            DESCRIPTION.
+            Name of PSuD test.
 
         Returns
         -------
