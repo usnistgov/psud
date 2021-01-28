@@ -141,18 +141,19 @@ class PSuD:
                  bufSize=20,
                  outdir='',
                  ri=None,
-                 info=None,
+                 info={'Test Type':'default','Pre Test Notes':None},
                  fs = 48e3,
                  ptt_wait=0.68,
                  ptt_gap=3.1,
-                 rng=np.random.default_rng(),
                  audioInterface=None,
-                 mrt= ABC_MRT16(),
                  time_expand = [100e-3 - 0.11e-3, 0.11e-3],
                  m2e_min_corr = 0.76,
                  get_post_notes = None,
                  intell_est='trial',
                  split_audio_dest=None):
+                 
+        self.mrt= ABC_MRT16()
+        self.rng=np.random.default_rng()
         #set default values
         self.audioFiles=audioFiles
         self.audioPath=audioPath
@@ -166,9 +167,7 @@ class PSuD:
         self.fs=fs
         self.ptt_wait=ptt_wait
         self.ptt_gap=ptt_gap
-        self.rng=rng
         self.audioInterface=audioInterface
-        self.mrt = mrt
         self.time_expand=time_expand
         self.m2e_min_corr=m2e_min_corr
         self.get_post_notes=get_post_notes
