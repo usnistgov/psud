@@ -250,7 +250,6 @@ class PSuD:
         self.outdir=outdir
         self.ri=ri
         self.info=info
-        self.fs=fs
         self.ptt_wait=ptt_wait
         self.ptt_gap=ptt_gap
         self.audioInterface=audioInterface
