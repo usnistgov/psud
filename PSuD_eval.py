@@ -16,28 +16,44 @@ import argparse
 class PSuD_eval():
     
     """
-    Class to process Probability of Successful Delivery tests
+    Class to evaluate Probability of Successful Delivery tests
     
+    Parameters
+    ----------
+    test_names : str or list
+        Name of test, or list of names of tests.
+    
+    test_path : str
+        Path where test data is stored. Does not need to be passed if 
+        test_names contains full paths to files and wav_dirs is set as well.
+        
+    wav_dirs : str or list
+        Paths to directories containing audio for a PSuD test. Must contain 
+        cutpoints for audio clips in data files.
+        
+    fs : int
+        Sample rate for audio. Default is 48e3 Hz
     
     Attributes
     ----------
     test_names : list
-        Test file names to process.
+        Test file names to evaluate.
     
-    test_info : XXX
-        Descr
+    test_info : dict
+        Dict with data_path, data_file, and cp_path fields.
         
     fs : int
         Sample rate for audio
         
-    test_dat : XXX
-        Descr.
+    test_dat : pd.DataFrame
+        Data from all sessions
         
-    cps : XXX
-        Descr
+    cps : Dict
+        Dict of each test, with cutpoints for each clip for each test.
         
-    test_chains : XXX
-        Descr
+    test_chains : np.array
+        List of longest chain of successful words for each trial of a test
+        
         
     max_audio_length : XXX
         Descr.
@@ -46,12 +62,12 @@ class PSuD_eval():
     -------
     
     eval_psud()
-        Descr.
+        Determine the probability of successful delivery of a message
     
     """
-    #TODO: Add documentation and docstrings to all methods    
-    #TODO: Change to only take one path, assume has csv and wav in it
+    
     def __init__(self,test_names, test_path='',wav_dirs=[],fs = 48e3):
+        
         if(type(test_names) is str):
             test_names = [test_names]
             if(type(wav_dirs) is str):
