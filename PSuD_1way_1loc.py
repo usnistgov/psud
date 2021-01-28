@@ -122,6 +122,29 @@ class PSuD:
     post_process(test_dat,fname,audio_path)
         process data from load_test_dat and write a new .csv file.
 
+    Examples
+    -------
+    
+    example of running a test with simulated devices
+
+    >>>from PSuD_1way_1loc import PSuD
+    >>>import mcvqoe.simulation
+    >>>sim_obj=mcvqoe.simulation.QoEsim()
+    >>>test_obj=PSuD(ri=sim_obj,audioInterface=sim_obj,trials=10,
+    ...     audioPath='path/to/audio/',
+    ...     audioFiles=('F1_PSuD_Norm_10.wav','F3_PSuD_Norm_10.wav',
+    ...         'M3_PSuD_Norm_10.wav','M4_PSuD_Norm_10.wav'
+    ...         )
+    ... )
+    >>>test_obj.run()
+    
+    Example of reprocessing  a test file, 'test.csv', to get 'rproc.csv'
+    
+    >>>from PSuD_1way_1loc import PSuD
+    >>>test_obj=PSuD()
+    >>>test_dat=test_obj.load_test_data('[path/to/outdir/]data/csv/test.csv')
+    >>>test_obj.post_process(test_dat,'rproc.csv',test_obj.audioPath)
+    
     """
 
 
