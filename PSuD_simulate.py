@@ -6,7 +6,7 @@ import scipy.io.wavfile as wav
 import numpy as np
 import shutil
 from PSuD_1way_1loc import PSuD as PSuD
-from PSuD_process import PSuD_process 
+from PSuD_eval import PSuD_eval 
 import mcvqoe.simulation
 
 #main function 
@@ -145,7 +145,7 @@ if __name__ == "__main__":
     test_path = os.path.join(args.outdir,"data")
     #--------------------------------[Evaluate Test]---------------------------
     # TODO: Make this fs determination smarter
-    t_proc = PSuD_process(test_name,
+    t_proc = PSuD_eval(test_name,
                           test_path = test_path,
                           fs = 48e3)
     print("----Intelligibility Success threshold = {}----".format(args.intell_threshold))

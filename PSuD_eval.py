@@ -13,9 +13,40 @@ import mcvqoe.math
 import mcvqoe.simulation
 import argparse
 
-class PSuD_process():
-    #TODO: Write this
-    """TODO: Write docstring
+class PSuD_eval():
+    
+    """
+    Class to process Probability of Successful Delivery tests
+    
+    
+    Attributes
+    ----------
+    test_names : list
+        Test file names to process.
+    
+    test_info : XXX
+        Descr
+        
+    fs : int
+        Sample rate for audio
+        
+    test_dat : XXX
+        Descr.
+        
+    cps : XXX
+        Descr
+        
+    test_chains : XXX
+        Descr
+        
+    max_audio_length : XXX
+        Descr.
+        
+    Methods
+    -------
+    
+    eval_psud()
+        Descr.
     
     """
     #TODO: Add documentation and docstrings to all methods    
@@ -388,7 +419,7 @@ if(__name__ == "__main__"):
     args = parser.parse_args()
     
 
-    t_proc = PSuD_process(args.test_names,
+    t_proc = PSuD_eval(args.test_names,
                           test_path= args.test_path,
                           fs = args.fs)
     # pdb.set_trace()

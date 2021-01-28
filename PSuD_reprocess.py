@@ -7,7 +7,7 @@ import os.path
 import scipy.io.wavfile
 import csv
 import sys
-from PSuD_process import PSuD_process 
+from PSuD_eval import PSuD_eval
 import tempfile
 
 import mcvqoe
