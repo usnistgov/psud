@@ -34,6 +34,8 @@ if __name__ == "__main__":
                         help='Time in seconds of audio to add before and after keywords before '+
                         'sending them to ABC_MRT. Can be one value for a symetric expansion or '+
                         'two values for an asymmetric expansion')
+    parser.add_argument('--audio-path',type=str,default=None,metavar='P',dest='audio_path',
+                        help='Path to audio files for test. Will be found automatically if not given')
     parser.add_argument('-s','--split-audio-folder', default=test_obj.split_audio_dest,type=str,dest='split_audio_dest',
                         help='Folder to store single word clips to')
     parser.add_argument('--msg-eval',
@@ -63,7 +65,7 @@ if __name__ == "__main__":
             print_outf=True
             
         #read in test data
-        test_dat=test_obj.load_test_data(args.datafile)
+        test_dat=test_obj.load_test_data(args.datafile,audio_path=args.audio_path)
             
         test_obj.post_process(test_dat,out_name,test_obj.audioPath)
             

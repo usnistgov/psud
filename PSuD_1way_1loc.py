@@ -711,6 +711,8 @@ class PSuD:
             filename to load
         load_audio : bool, default=True
             if True, finds and loads audio clips and cutpoints based on fname
+        audio_path : str, default=None  
+            Path to find audio files at. Guessed from fname if None.
 
         Returns
         -------
@@ -755,8 +757,11 @@ class PSuD:
             
             dat_name,_=os.path.splitext(os.path.basename(fname))
             
-            #set audioPath based on filename
-            self.audioPath=os.path.join(os.path.dirname(os.path.dirname(fname)),'wav',dat_name)
+            if(audio_path is not None):
+                self.audioPath=audio_path
+            else:
+                #set audioPath based on filename
+                self.audioPath=os.path.join(os.path.dirname(os.path.dirname(fname)),'wav',dat_name)
             
             #load audio data from files
             self.load_audio()
