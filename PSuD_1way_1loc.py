@@ -41,13 +41,14 @@ def align_audio(tx,rx,m2e_latency,fs):
         
 class PSuD:
     """
-    Class to run and reprocess Probability of Successful Delivery tests
+    Class to run and reprocess Probability of Successful Delivery tests.
 
-    ...
-
+    The PSuD class is used to run Probability of Successful Delivery tests.
+    These can either be tests with real communication devices or simulated Push
+    To Talk (PTT) systems.
+    
     Attributes
     ----------
-
     audioFiles : list
         List of names of audio files. relative paths are relative to audioPath
     audioPath : string
@@ -145,10 +146,9 @@ class PSuD:
     post_process(test_dat,fname,audio_path)
         process data from load_test_dat and write a new .csv file.
 
-    Examples
-    -------
-    
-    example of running a test with simulated devices
+Examples
+--------
+    example of running a test with simulated devices.
 
     >>>from PSuD_1way_1loc import PSuD
     >>>import mcvqoe.simulation
@@ -167,7 +167,6 @@ class PSuD:
     >>>test_obj=PSuD()
     >>>test_dat=test_obj.load_test_data('[path/to/outdir/]data/csv/test.csv')
     >>>test_obj.post_process(test_dat,'rproc.csv',test_obj.audioPath)
-    
     """
 
 
@@ -197,7 +196,7 @@ class PSuD:
                  intell_est='trial',
                  split_audio_dest=None):
         """
-        create a new PSuD object
+        create a new PSuD object.
         
         Parameters
         ----------
@@ -261,7 +260,7 @@ class PSuD:
         
     def load_audio(self):
         """
-        load audio files for use in test
+        load audio files for use in test.
         
         this loads audio from self.audioFiles and stores values in self.y,
         self.cutpoints and self.keyword_spacings
@@ -338,7 +337,7 @@ class PSuD:
             
     def set_time_expand(self,t_ex):
         """
-        convert time expand from seconds to samples and ensure a 2 element vector
+        convert time expand from seconds to samples and ensure a 2 element vector.
         
         This is called automatically in run and post_process and, normally, it
         is not required to call set_time_expand manually
@@ -349,7 +348,6 @@ class PSuD:
             time expand values in seconds
         Returns
         -------
-
         """
         self.time_expand_samples=np.array(t_ex)
         
@@ -363,7 +361,7 @@ class PSuD:
     def audio_clip_check(self):
     #TODO : this could probably be moved into load_audio, also not 100% sure this name makes sense
         """
-        find the number of keywords in clips
+        find the number of keywords in clips.
         
         this is called when loading audio in `run` and load_test_dat it should
         not, normally, need to be called manually
@@ -373,7 +371,6 @@ class PSuD:
         
         Returns
         -------
-        
         """
         #number of keyword columns to have in the .csv file
         self.num_keywords=0
@@ -386,7 +383,7 @@ class PSuD:
             
     def csv_header_fmt(self):
         """
-        generate header and format for .csv files
+        generate header and format for .csv files.
         
         This generates a header for .csv files along with a format (that can be
         used with str.format()) to generate each row in the .csv
@@ -414,7 +411,7 @@ class PSuD:
     
     def run(self):
         """
-        run a test with the properties of the class
+        run a test with the properties of the class.
 
         Returns
         -------
@@ -597,7 +594,7 @@ class PSuD:
         
     def process_audio(self,clip_index,fname):
         """
-        estimate mouth to ear latency and intelligibility for an audio clip
+        estimate mouth to ear latency and intelligibility for an audio clip.
 
         Parameters
         ----------
@@ -650,7 +647,7 @@ class PSuD:
 
     def compute_intelligibility(self,audio,cutpoints,clip_base=None):
         """
-        estimate intelligibility for audio
+        estimate intelligibility for audio.
 
         Parameters
         ----------
@@ -701,9 +698,9 @@ class PSuD:
         
         return success_pad
         
-    def load_test_data(self,fname,load_audio=True):
+    def load_test_data(self,fname,load_audio=True,audio_path=None):
         """
-        load test data from .csv file
+        load test data from .csv file.
 
         Parameters
         ----------
@@ -772,7 +769,7 @@ class PSuD:
     #get the clip index given a partial clip name
     def find_clip_index(self,name):
         """
-        find the inex of the matching transmit clip
+        find the inex of the matching transmit clip.
 
         Parameters
         ----------
@@ -798,7 +795,7 @@ class PSuD:
         
     def post_process(self,test_dat,fname,audio_path):
         """
-        process csv data
+        process csv data.
 
         Parameters
         ----------
