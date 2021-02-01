@@ -8,6 +8,7 @@ import shutil
 from PSuD_1way_1loc import PSuD as PSuD
 from PSuD_eval import PSuD_eval 
 import mcvqoe.simulation
+import mcvqoe.gui
 
 #main function 
 if __name__ == "__main__":
@@ -24,7 +25,7 @@ if __name__ == "__main__":
     test_obj.ptt_wait=0
     test_obj.ptt_gap=0
     #only get test notes on error
-    test_obj.get_post_notes=lambda : mcvqoe.post_test(error_only=True)
+    test_obj.get_post_notes=lambda : mcvqoe.gui.post_test(error_only=True)
     
     #set audioInterface to sim object
     test_obj.audioInterface=sim_obj
@@ -106,7 +107,7 @@ if __name__ == "__main__":
         
     #------------------------------[Get test info]------------------------------
     
-    test_obj.info=mcvqoe.pretest(args.outdir,ri=sim_obj)
+    test_obj.info=mcvqoe.gui.pretest(args.outdir,ri=sim_obj)
     
     #-------------------------[Set simulation settings]-------------------------
 

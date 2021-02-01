@@ -14,6 +14,8 @@ import csv
 from distutils.util import strtobool
 
 import mcvqoe
+import mcvqoe.gui
+import mcvqoe.hardware
 from abcmrt import ABC_MRT16
 
 
@@ -846,7 +848,7 @@ if __name__ == "__main__":
     #create object here to use default values for arguments
     test_obj=PSuD()
     #set end notes function
-    test_obj.get_post_notes=mcvqoe.post_test
+    test_obj.get_post_notes=mcvqoe.gui.post_test
 
     #-----------------------[Setup ArgumentParser object]-----------------------
 
@@ -907,13 +909,13 @@ if __name__ == "__main__":
             
     #-------------------------[Create audio interface]-------------------------
     
-    test_obj.audioInterface=mcvqoe.AudioPlayer()
+    test_obj.audioInterface=mcvqoe.hardware.AudioPlayer()
             
     #------------------------------[Get test info]------------------------------
-    test_obj.info=mcvqoe.pretest(args.outdir)
+    test_obj.info=mcvqoe.gui.pretest(args.outdir)
     
     #---------------------------[Open RadioInterface]---------------------------
     
-    with mcvqoe.RadioInterface(args.radioport) as test_obj.ri:
+    with mcvqoe.hardware.RadioInterface(args.radioport) as test_obj.ri:
         #------------------------------[Run Test]------------------------------
         test_obj.run()
