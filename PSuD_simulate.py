@@ -89,7 +89,11 @@ if __name__ == "__main__":
     parser.add_argument('--intell-threshold',
                         type = float,
                         default = 0.5,
-                        help = "Intelligibility success threshold")              
+                        help = "Intelligibility success threshold") 
+    parser.add_argument('-F','--full-audio-dir',dest='full_audio_dir',action='store_true',default=False,
+                        help='ignore --audioFiles and use all files in --audioPath')
+    parser.add_argument('--no-full-audio-dir',dest='full_audio_dir',action='store_false',
+                        help='use --audioFiles to determine which audio clips to read')             
                                                 
                         
     #-----------------------------[Parse arguments]-----------------------------

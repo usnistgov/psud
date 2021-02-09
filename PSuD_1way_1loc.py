@@ -135,6 +135,8 @@ class PSuD:
         trial. This is randomized in `run` before the test is run
     data_filename : string
         This is set in the `run` method to the path to the output .csv file.
+    full_audio_dir : bool, default=False
+        read all .wav files in audioPath and ignore audioFiles
 
     Methods
     -------
@@ -196,7 +198,8 @@ Examples
                  m2e_min_corr = 0.76,
                  get_post_notes = None,
                  intell_est='trial',
-                 split_audio_dest=None):
+                 split_audio_dest=None,
+                 full_audio_dir=False):
         """
         create a new PSuD object.
         
@@ -236,6 +239,8 @@ Examples
             Control when intelligibility and mouth to ear estimations are done.
         split_audio_dest : string, default=None
             path where individually cut word clips are stored
+        full_audio_dir : bool, default=False
+            read all .wav files in audioPath and ignore audioFiles
         """
                  
         self.fs=48e3
@@ -259,6 +264,7 @@ Examples
         self.get_post_notes=get_post_notes
         self.intell_est=intell_est
         self.split_audio_dest=split_audio_dest
+        self.full_audio_dir=full_audio_dir
         
     def load_audio(self):
         """
@@ -283,8 +289,8 @@ Examples
             If clip fs doesn't match self.fs
         """
     
-        #check that audio files is not empty
-        if not self.audioFiles:
+        #if we are not using all files, check that audio files is not empty
+        if not self.audioFiles and not self.full_audio_dir:
             #TODO : is this the right error to use here??
             raise ValueError('Expected self.audioFiles to not be empty')
 
@@ -292,6 +298,21 @@ Examples
         if(self.split_audio_dest):
             #make sure that splid audio directory exists
             os.makedirs(self.split_audio_dest,exist_ok=True)
+            
+        if(self.full_audio_dir):
+            #override audioFiles
+            self.audioFiles=[]
+            #look through all things in audioPath
+            for f in os.scandir(self.audioPath):
+                #make sure this is a file
+                if(f.is_file()): 
+                    #get extension
+                    _,ext=os.path.splitext(f.name)
+                    #check for .wav files
+                    if(ext=='.wav'):
+                        #add to list
+                        self.audioFiles.append(f.name)
+                #TODO : recursive search?
 
         #list for input speech
         self.y=[]
@@ -892,6 +913,10 @@ if __name__ == "__main__":
                         help='Time to pause between trials')
     parser.add_argument('--m2e-min-corr', type=float, default=test_obj.m2e_min_corr, metavar='C',dest='m2e_min_corr',
                         help='Minimum correlation value for acceptable mouth 2 ear measurement (default: %(default)0.2f)')
+    parser.add_argument('-F','--full-audio-dir',dest='full_audio_dir',action='store_true',default=False,
+                        help='ignore --audioFiles and use all files in --audioPath')
+    parser.add_argument('--no-full-audio-dir',dest='full_audio_dir',action='store_false',
+                        help='use --audioFiles to determine which audio clips to read')
                                                 
                         
     #-----------------------------[Parse arguments]-----------------------------
