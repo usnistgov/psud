@@ -910,12 +910,15 @@ if __name__ == "__main__":
     #-------------------------[Create audio interface]-------------------------
     
     test_obj.audioInterface=mcvqoe.hardware.AudioPlayer()
-            
-    #------------------------------[Get test info]------------------------------
-    test_obj.info=mcvqoe.gui.pretest(args.outdir)
     
     #---------------------------[Open RadioInterface]---------------------------
     
     with mcvqoe.hardware.RadioInterface(args.radioport) as test_obj.ri:
+                                                    
+        #------------------------------[Get test info]------------------------------
+        test_obj.info=mcvqoe.gui.pretest(args.outdir,
+                    check_function=lambda : mcvqoe.hardware.single_play(
+                                                    test_obj.ri,test_obj.audioInterface,
+                                                    ptt_wait=test_obj.ptt_wait))
         #------------------------------[Run Test]------------------------------
         test_obj.run()

@@ -9,6 +9,7 @@ from PSuD_1way_1loc import PSuD as PSuD
 from PSuD_eval import PSuD_eval 
 import mcvqoe.simulation
 import mcvqoe.gui
+import sys
 
 #main function 
 if __name__ == "__main__":
@@ -104,11 +105,7 @@ if __name__ == "__main__":
         if hasattr(test_obj,k):
             setattr(test_obj,k,v)
             
-        
-    #------------------------------[Get test info]------------------------------
-    
-    test_obj.info=mcvqoe.gui.pretest(args.outdir,ri=sim_obj)
-    
+
     #-------------------------[Set simulation settings]-------------------------
 
     sim_obj.channel_tech=args.channel_tech
@@ -120,7 +117,32 @@ if __name__ == "__main__":
         sim_obj.channel_rate=args.channel_rate
         
     sim_obj.m2e_latency=args.m2e_latency
+        
+    #------------------------------[Get test info]------------------------------
+    
+    gui=mcvqoe.gui.TestInfoGui(write_test_info=False)
+    
+    gui.chk_audio_function=lambda : mcvqoe.hardware.single_play(sim_obj,sim_obj,
+                                                    playback=True,
+                                                    ptt_wait=test_obj.ptt_wait)
 
+    #construct string for system name
+    system=sim_obj.channel_tech
+    if(sim_obj.channel_rate is not None):
+        system+=' at '+str(sim_obj.channel_rate)
+
+    gui.info_in['test_type'] = "simulation"
+    gui.info_in['tx_dev'] = "none"
+    gui.info_in['rx_dev'] = "none"
+    gui.info_in['system'] = system
+    gui.info_in['test_loc'] = "N/A"
+    test_obj.info=gui.show()
+
+    #check if the user canceled
+    if(test_obj.info is None):
+        print(f"\n\tExited by user")
+        sys.exit(1)
+    
     #---------------------------[add probabilityiesr]---------------------------
     
     if(args.use_probabilityiser):
