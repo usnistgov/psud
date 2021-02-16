@@ -12,6 +12,7 @@ import scipy.io.wavfile as wav
 import warnings
 import csv
 from distutils.util import strtobool
+import re
 
 import mcvqoe
 import mcvqoe.gui
@@ -805,8 +806,12 @@ Examples
             index of matching tx clip
 
         """
-        #get all matching indicies
-        match=[idx for idx,clip in enumerate(self.audioFiles) if name in clip]
+        
+        #match a string that has the chars that are in name
+        #this 
+        name_re=re.compile(re.escape(name)+'(?![^.])')
+        #get all matching indices
+        match=[idx for idx,clip in enumerate(self.audioFiles) if  name_re.search(clip)]
         #check that a match was found
         if(not match):
             raise RuntimeError(f'no audio clips found matching \'{name}\' found in {self.audioFiles}')
