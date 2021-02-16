@@ -7,7 +7,6 @@ import numpy as np
 import datetime
 import shutil
 import time
-from scipy.interpolate import interp1d
 import scipy.io.wavfile as wav
 import warnings
 import csv
@@ -18,27 +17,6 @@ import mcvqoe
 import mcvqoe.gui
 import mcvqoe.hardware
 from abcmrt import ABC_MRT16
-
-
-#offset rx audio so that M2E latency is removed
-#TODO : maybe this should be in a comon library?
-def align_audio(tx,rx,m2e_latency,fs):
-    # create time array for the rx_signal and offest it by the calculated delay
-    points = np.arange(len(rx)) / fs - m2e_latency
-
-    # create interpolation function based on offsetted time array
-    f = interp1d(points, rx, fill_value=np.nan)
-    
-    try:
-        # apply function to non-offset time array to get rec_dat without latency
-        aligned=f(np.arange(len(tx)) / fs)
-    except ValueError as err:
-        #TODO : there is probably a better fix for this but just return rx data with no shift and give a warning
-        warnings.warn(f'Problem during time alignment \'{str(err)}\' returning data with no shift',RuntimeWarning)
-        #there was a problem with try our best...
-        aligned=rx[:len(tx)]
-        
-    return aligned
 
         
         
@@ -151,8 +129,8 @@ class PSuD:
     post_process(test_dat,fname,audio_path)
         process data from load_test_dat and write a new .csv file.
 
-Examples
---------
+    Examples
+    --------
     example of running a test with simulated devices.
 
     >>>from PSuD_1way_1loc import PSuD
@@ -652,10 +630,6 @@ Examples
              
         estimated_m2e_latency=dly_res[1] / self.fs
 
-        #---------------------------[align audio]---------------------------
-        
-        rec_dat_no_latency = align_audio(self.y[clip_index],rec_dat,estimated_m2e_latency,self.fs)
-            
         #---------------------[Compute intelligibility]---------------------
         
         #strip filename for basename in case of split clips
@@ -664,12 +638,17 @@ Examples
         else:
             bname=None
 
-        success=self.compute_intelligibility(rec_dat_no_latency,self.cutpoints[clip_index],clip_base=bname)
+        success=self.compute_intelligibility(
+                                            rec_dat,
+                                            self.cutpoints[clip_index],
+                                            dly_res[1],
+                                            clip_base=bname
+                                            )
 
             
         return {'m2e_latency':estimated_m2e_latency,'intel':success,'good_M2E':good_m2e}
 
-    def compute_intelligibility(self,audio,cutpoints,clip_base=None):
+    def compute_intelligibility(self,audio,cutpoints,cp_shift,clip_base=None):
         """
         estimate intelligibility for audio.
 
@@ -679,6 +658,8 @@ Examples
             time aligned audio to estimate intelligibility on
         cutpoints : list of dicts
             cutpoints for audio file
+        cp_shift : int
+            Offset to add to cutpoints to correct for M2E.
         clip_base : str or None, default=None
             basename for split clips. Split clips will not be written if None
 
@@ -700,8 +681,8 @@ Examples
         for cp_num,cpw in enumerate(cutpoints):
             if(not np.isnan(cpw['Clip'])):
                 #calculate start and end points
-                start=np.clip(cpw['Start']-self.time_expand_samples[0],0,max_idx)
-                end  =np.clip(cpw['End']  +self.time_expand_samples[1],0,max_idx)
+                start=np.clip(cp_shift+cpw['Start']-self.time_expand_samples[0],0,max_idx)
+                end  =np.clip(cp_shift+cpw['End']  +self.time_expand_samples[1],0,max_idx)
                 #add word audio to array
                 word_audio.append(audio[start:end])
                 #add word num to array
