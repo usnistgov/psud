@@ -616,7 +616,9 @@ class PSuD:
         fs,rec_dat = scipy.io.wavfile.read(fname)
         if(self.fs != fs):
             raise RuntimeError('Recorded sample rate does not match!')
-            
+        
+        rec_dat=mcvqoe.audio_float(rec_dat)
+        
         #------------------------[calculate M2E]------------------------
         dly_res = mcvqoe.ITS_delay_est(self.y[clip_index], rec_dat, "f", fsamp=self.fs,min_corr=self.m2e_min_corr)
         
