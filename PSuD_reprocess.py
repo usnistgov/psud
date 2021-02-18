@@ -55,12 +55,19 @@ if __name__ == "__main__":
     
     with tempfile.TemporaryDirectory() as tmp_dir:
         
-        if(args.outfile):
+        if(args.outfile=='--'):
+            #print results, don't save file
+            out_name=os.path.join(tmp_dir,'tmp.csv')
+            print_outf=True
+        elif(args.outfile):
             out_name=args.outfile
             print_outf=False
         else:
-            out_name=os.path.join(tmp_dir,'tmp.csv')
-            print_outf=True
+            #split data file path into parts
+            d,n=os.path.split(args.datafile)
+            #construct new name for file
+            out_name=os.path.join(d,'R'+n)
+            print_outf=False
             
         #read in test data
         test_dat=test_obj.load_test_data(args.datafile,audio_path=args.audio_path)
