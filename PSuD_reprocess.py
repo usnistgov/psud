@@ -68,9 +68,12 @@ if __name__ == "__main__":
             #construct new name for file
             out_name=os.path.join(d,'R'+n)
             print_outf=False
-            
+
+        print(f'Loading test data from \'{args.datafile}\'',file=sys.stderr)
         #read in test data
         test_dat=test_obj.load_test_data(args.datafile,audio_path=args.audio_path)
+
+        print(f'Reprocessing test data to \'{out_name}\'',file=sys.stderr)
             
         test_obj.post_process(test_dat,out_name,test_obj.audioPath)
             
@@ -79,6 +82,7 @@ if __name__ == "__main__":
                 dat=out_file.read()
             print(dat)
             
+        print(f'Reprocessing complete for \'{out_name}\'',file=sys.stderr)
         
         #--------------------------------[Evaluate Test]---------------------------
         # TODO: Make this fs determination smarter

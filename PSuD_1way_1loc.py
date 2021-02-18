@@ -12,6 +12,7 @@ import warnings
 import csv
 from distutils.util import strtobool
 import re
+import sys
 
 import mcvqoe
 import mcvqoe.gui
@@ -835,6 +836,8 @@ class PSuD:
 
             for n,trial in enumerate(test_dat):
                 
+                print(f'Processing trial {n+1} of {len(test_dat)}',file=sys.stderr)
+
                 #find clip index
                 clip_index=self.find_clip_index(trial['Filename'])
                 #create clip file name
