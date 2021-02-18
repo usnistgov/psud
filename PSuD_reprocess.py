@@ -28,8 +28,6 @@ if __name__ == "__main__":
                         help='CSV file from test to reprocess')
     parser.add_argument('outfile', default=None, type=str, nargs='?',
                         help='file to write reprocessed CSV data to. Can be the same name as datafile to overwrite results. if omitted output will be written to stdout')
-    parser.add_argument('-o', '--outdir', default='', metavar='DIR',
-                        help='Directory that is added to the output path for all files')
     parser.add_argument('-x', '--time-expand', type=float, default=test_obj.time_expand,metavar='DUR',dest='time_expand',nargs='+',
                         help='Time in seconds of audio to add before and after keywords before '+
                         'sending them to ABC_MRT. Can be one value for a symetric expansion or '+
