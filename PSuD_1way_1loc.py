@@ -17,7 +17,7 @@ import sys
 import mcvqoe
 import mcvqoe.gui
 import mcvqoe.hardware
-from abcmrt import ABC_MRT16
+import abcmrt
 
         
         
@@ -59,8 +59,6 @@ class PSuD:
         Generator to use for random numbers
     audioInterface : mcvqoe.AudioPlayer or mcvqoe.simulation.QoEsim
         interface to use to play and record audio on the communication channel
-    mrt : abcmrt.ABC_MRT16
-        ABC_MRT object to use for intelligibility
     time_expand : 1 or 2 element list or tuple of floats
         Amount of time, in seconds, of extra audio to use for intelligibility
         estimation. If only one value is given, it is used both before and after
@@ -224,7 +222,6 @@ class PSuD:
         """
                  
         self.fs=48e3
-        self.mrt= ABC_MRT16()
         self.rng=np.random.default_rng()
         #set default values
         self.audioFiles=audioFiles
@@ -697,7 +694,7 @@ class PSuD:
                     scipy.io.wavfile.write(outname, int(self.fs), audio[start:end])
 
         #---------------------[Compute intelligibility]---------------------
-        phi_hat,success=self.mrt.process(word_audio,word_num)
+        phi_hat,success=abcmrt.process(word_audio,word_num)
         
         #expand success so len is num_keywords
         success_pad=np.empty(self.num_keywords)
