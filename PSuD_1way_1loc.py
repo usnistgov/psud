@@ -447,10 +447,12 @@ class PSuD:
         dtn=self.info['Tstart'].strftime('%d-%b-%Y_%H-%M-%S')
         
         #--------------------------[Fill log entries]--------------------------
-        self.info.update(mcvqoe.write_log.fill_log(self))
-        
+        #set test name
         self.info['test']='PSuD'
-        
+        #add abcmrt version
+        self.info['abcmrt version']=abcmrt.version
+        #fill in standard stuff
+        self.info.update(mcvqoe.write_log.fill_log(self))
         #-----------------------[Setup Files and folders]-----------------------
         
         #generate data dir names
