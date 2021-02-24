@@ -7,7 +7,7 @@ import os.path
 import scipy.io.wavfile
 import csv
 import sys
-from PSuD_eval import PSuD_eval
+from PSuD_eval import evaluate
 import tempfile
 
 import mcvqoe
@@ -77,7 +77,7 @@ if __name__ == "__main__":
         
         #--------------------------------[Evaluate Test]---------------------------
         # TODO: Make this fs determination smarter
-        t_proc = PSuD_eval(out_name,wav_dirs=test_obj.audioPath,fs = 48e3)
+        t_proc = evaluate(out_name,wav_dirs=test_obj.audioPath,fs = 48e3)
         print("----Intelligibility Success threshold = {}----".format(args.intell_threshold))
         print("Results shown as Psud(t) = mean, (95% C.I.)")
         
