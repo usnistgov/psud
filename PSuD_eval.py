@@ -14,7 +14,7 @@ import mcvqoe.math
 import mcvqoe.simulation
 import argparse
 
-class PSuD_eval():
+class evaluate():
     
     """
     Class to evaluate Probability of Successful Delivery tests
@@ -491,7 +491,7 @@ if(__name__ == "__main__"):
     
     args = parser.parse_args()
     
-    t_proc = PSuD_eval(args.test_names,
+    t_proc = evaluate(args.test_names,
                           test_path= args.test_path,
                           fs = args.fs,
                           use_reprocess=args.no_reprocess)
