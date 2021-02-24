@@ -51,7 +51,7 @@ class PSuD_eval():
     
     """
     
-    def __init__(self,test_names, test_path='',wav_dirs=[],fs = 48e3):
+    def __init__(self,test_names, test_path='',wav_dirs=[],fs = 48e3,use_reprocess = True):
         """
         Initialize PSuD_eval object.
 
@@ -117,7 +117,10 @@ class PSuD_eval():
                 t_name=os.path.basename(os.path.normpath(wd))
             else:
                 #otherwise get path to the wav dir
-                cp_path=os.path.join(cp_path,t_name)
+                
+                # remove possible R in t_name
+                wt_name = t_name.replace('Rcapture','capture')
+                cp_path=os.path.join(cp_path,wt_name)
                 
             #put things into the test info structure
             self.test_info[t_name]={'data_path':dat_path,'data_file':dat_file,'cp_path':cp_path}
@@ -129,8 +132,12 @@ class PSuD_eval():
         #TODO: Add audio length - store max we've seen, 
         self.max_audio_length = None
         
+        # Check if you reprocessed data should be used
+        self.use_reprocess = use_reprocess
         
         self.test_dat, self.cps = self.load_sessions()
+        
+        
         
         #TODO: 
         
@@ -158,7 +165,12 @@ class PSuD_eval():
         """
        
         fname = self.test_info[test_name]['data_file']
-
+        
+        
+        if(self.use_reprocess):
+            # Look for reprocessed file if it exists
+            fname = self.check_reprocess(fname)
+        
         test = pd.read_csv(fname)
         # Store test name as column in test
         test['name'] = test_name
@@ -199,6 +211,38 @@ class PSuD_eval():
                 
             # tests_cp = {**tests_cp, **test_cp}
         return((tests,tests_cp))
+    
+    def check_reprocess(self,fname):
+        """
+        Look for a reprocessed data file in same path as fname
+        
+        Searches for a reprocessed data file in same path as fname. 
+        Reprocessed data always starts as 'Rcapture', where original data 
+        starts with 'capture'. Returns reprocessed file name if it exists, 
+        otherwise returns original file name.
+
+        Parameters
+        ----------
+        fname : str
+            Path to a session csv file.
+
+        Returns
+        -------
+        str:
+            Path to reprocessed file if it exits, otherwise returns fname
+
+        """
+        dat_path,name=os.path.split(fname)
+        if('Rcapture' not in name):
+            reprocess_fname = os.path.join(dat_path, 'R{}'.format(name))
+            if(os.path.exists(reprocess_fname)):
+                out_name = reprocess_fname
+            else:
+                out_name = fname
+        else:
+            out_name = fname
+        
+        return(out_name)
     
     def get_clip_names(self,test_dat):
         """
@@ -407,7 +451,7 @@ class PSuD_eval():
         return((psud,ci))
     
 
-    
+#--------------------------------[main]---------------------------------------
 if(__name__ == "__main__"):
     
     # Set up argument parser
@@ -440,13 +484,18 @@ if(__name__ == "__main__"):
                         type = float,
                         help = "Message length")
     
+    parser.add_argument('-n', '--no-reprocess',
+                        default = True,
+                        action = "store_false",
+                        help = "Do not use reprocessed data if it exists.")
+    
     args = parser.parse_args()
     
-
     t_proc = PSuD_eval(args.test_names,
                           test_path= args.test_path,
-                          fs = args.fs)
-    # pdb.set_trace()
+                          fs = args.fs,
+                          use_reprocess=args.no_reprocess)
+    
     for threshold in args.threshold:
         print("----Intelligibility Success threshold = {}----".format(threshold))
         print("Results shown as Psud(t) = mean, (95% C.I.)")
