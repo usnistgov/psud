@@ -2,14 +2,12 @@
 
 import argparse
 import os.path
-import scipy.io.wavfile as wav
-import numpy as np
-import shutil
-from PSuD_1way_1loc import PSuD as PSuD
+import PSuD
 from PSuD_eval import PSuD_eval 
 import mcvqoe.simulation
 import mcvqoe.gui
 import sys
+import mcvqoe.hardware
 
 #main function 
 if __name__ == "__main__":
@@ -21,7 +19,7 @@ if __name__ == "__main__":
     #TODO : set sim parameters
 
     #create object here to use default values for arguments
-    test_obj=PSuD()
+    test_obj=PSuD.measure()
     #set wait times to zero for simulation
     test_obj.ptt_wait=0
     test_obj.ptt_gap=0
