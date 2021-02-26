@@ -210,6 +210,9 @@ class evaluate():
             #         warnings.warn("Cutpoints being overwritten: {}".format(updates))
                 
             # tests_cp = {**tests_cp, **test_cp}
+        # Ensure that tests has unique row index
+        nrow,_ = tests.shape
+        tests.index = np.arange(nrow)
         return((tests,tests_cp))
     
     def check_reprocess(self,fname):
@@ -286,7 +289,7 @@ class evaluate():
         cp = pd.read_csv(fpath)
         return(cp)
     
-    def get_test_chains(self,threshold):
+    def get_test_chains(self,method,threshold):
         """
         Determine longest successful chain of words for each trial of a test
 
@@ -303,8 +306,16 @@ class evaluate():
         """
         chains = []
         times = []
+        
+        if(method =="ARF"):
+            arf_intell = self.filter_intelligibility(self.test_dat.filter(regex="W\d+_Int"))
+        
         for ix,trial in self.test_dat.iterrows():
-            chain_len = self.get_trial_chain_length(trial,threshold=threshold)
+            if(method == "EWC"):
+                chain_len = self.get_trial_chain_length(trial.filter(regex='W\d+_Int'),threshold=threshold)
+            elif(method == "ARF"):
+                chain_len = self.get_trial_chain_length(arf_intell.loc[ix],threshold=threshold)
+                # chain_len = None
             chains.append(chain_len)
             
             # Get clip cutpoints
@@ -312,7 +323,12 @@ class evaluate():
             chain_time = self.chain2time(clip_cp,chain_len)
             times.append(chain_time)
         np_chains = np.array(chains)
-        self.test_chains[threshold] = np_chains
+        if(method in self.test_chains):
+            self.test_chains[method][threshold] = np_chains
+        else:
+            self.test_chains[method] = {threshold: np_chains}
+                
+        # self.test_chains[threshold] = np_chains
         return(np_chains)
     
     def get_trial_chain_length(self,trial, threshold):
@@ -332,24 +348,32 @@ class evaluate():
             Number of words that achieved intelligibility greater than threshold
 
         """
-        # flag to determine if chain is still active
-        chain = True
-        # Length of current chain
-        chain_len = 0
-        
-        while(chain):
-            # Convert chain length to word
-            colname = "W{}_Int".format(chain_len)
-            if colname in trial and trial[colname] >= threshold:
-                #Check that both colname exists in trial and that trial success 
-                #is greater than threshold
-                
-                # Increment chain length
-                chain_len += 1
-            else:
-                # Break chain
-                chain = False
+             
+        failures = np.where(~(trial >= threshold))
+        if(failures[0].size == 0):
+            chain_len = len(trial)
+        else:
+            chain_len = failures[0][0]
         return(chain_len)
+        # # Length of current chain
+        # chain_len = 0
+        
+        # for word_int in trial:t
+        #     if(word_int)
+        
+        # while(chain):
+        #     # Convert chain length to word
+        #     colname = "W{}_Int".format(chain_len)
+        #     if colname in trial and trial[colname] >= threshold:
+        #         #Check that both colname exists in trial and that trial success 
+        #         #is greater than threshold
+                
+        #         # Increment chain length
+        #         chain_len += 1
+        #     else:
+        #         # Break chain
+        #         chain = False
+        # return(chain_len)
     
     def chain2time(self,clip_cp,chain_length):
         """
@@ -395,8 +419,32 @@ class evaluate():
         chain_time = (clip_cp.loc[success_ix,'End']+1)/self.fs
         
         return(chain_time)
+    
+    def filter_intelligibility(self,int_data,weights=[0.5,0.5]):
         
-    def eval_psud(self,threshold,msg_len,p=0.95,R=1e4):
+        # # Get number ofrows in data
+        # nrow,_ = int_data.shape
+        # # Ensure that int_data has unique row names
+        # int_data.index = np.arange(nrow)
+        
+        
+        fint = pd.DataFrame(columns = int_data.columns)
+        # fint = int_data.copy()
+        for ix,trial in  int_data.iterrows():
+            
+            ftrial = np.empty(len(trial))
+            for wix, wint in enumerate(trial):
+                if(wix == 0):
+                    ftrial[wix] = trial[wix]
+                else:
+                    ftrial[wix] = weights[0]*trial[wix] + weights[1]*ftrial[wix-1]
+            
+            
+            fint.loc[ix] = ftrial
+        return(fint)
+            
+    
+    def eval_psud(self,threshold,msg_len,p=0.95,R=1e4,method='EWC'):
         """
         Determine the probability of successful delivery of a message
 
@@ -428,11 +476,15 @@ class evaluate():
         # TODO: if msg_len > self.max_audio_length report NaN
         
         # Calculate test chains for this threshold, if we don't already have them
-        if(threshold not in self.test_chains):
-            self.get_test_chains(threshold)
+        if(method not in self.test_chains):
+            self.get_test_chains(method,threshold)
+        elif(threshold not in self.test_chains[method]):
+            self.get_test_chains(method,threshold)
+        # if(threshold not in self.test_chains):
+        #     self.get_test_chains(threshold)
         
         # Get relevant test chains
-        test_chains = self.test_chains[threshold]
+        test_chains = self.test_chains[method][threshold]
         
         # Label chains as success or failure
         msg_success = test_chains >= msg_len
@@ -488,6 +540,10 @@ if(__name__ == "__main__"):
                         default = True,
                         action = "store_false",
                         help = "Do not use reprocessed data if it exists.")
+    parser.add_argument('--method',
+                        default = "EWC",
+                        type = str,
+                        help = "PSuD method to use. Must be one of 'EWC' or 'ARF'.")
     
     args = parser.parse_args()
     
@@ -501,7 +557,7 @@ if(__name__ == "__main__"):
         print("Results shown as Psud(t) = mean, (95% C.I.)")
         msg_str = "PSuD({}) = {:.4f}, ({:.4f},{:.4f})"
         for message_len in args.message_length:    
-            psud_m,psud_ci = t_proc.eval_psud(threshold,message_len)
+            psud_m,psud_ci = t_proc.eval_psud(threshold,message_len,method = args.method)
             
             print(msg_str.format(message_len,
                                   psud_m,
