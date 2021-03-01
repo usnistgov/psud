@@ -289,7 +289,7 @@ class evaluate():
         cp = pd.read_csv(fpath)
         return(cp)
     
-    def get_test_chains(self,method,threshold):
+    def get_test_chains(self,method,threshold,method_weight = None):
         """
         Determine longest successful chain of words for each trial of a test
 
@@ -308,7 +308,10 @@ class evaluate():
         times = []
         
         if(method =="ARF"):
-            arf_intell = self.filter_intelligibility(self.test_dat.filter(regex="W\d+_Int"))
+            arf_intell = self.filter_intelligibility(self.test_dat.filter(regex="W\d+_Int"),
+                                                     weight=method_weight)
+        elif(method == "EWC" and method_weight is not None):
+            warnings.warn("Method weight passed to EWC, will not be used")
         
         for ix,trial in self.test_dat.iterrows():
             if(method == "EWC"):
@@ -420,7 +423,7 @@ class evaluate():
         
         return(chain_time)
     
-    def filter_intelligibility(self,int_data,weights=[0.5,0.5]):
+    def filter_intelligibility(self,int_data,weight=0.5):
         
         # # Get number ofrows in data
         # nrow,_ = int_data.shape
@@ -437,14 +440,14 @@ class evaluate():
                 if(wix == 0):
                     ftrial[wix] = trial[wix]
                 else:
-                    ftrial[wix] = weights[0]*trial[wix] + weights[1]*ftrial[wix-1]
+                    ftrial[wix] = weight*trial[wix] + (1-weight)*ftrial[wix-1]
             
             
             fint.loc[ix] = ftrial
         return(fint)
             
     
-    def eval_psud(self,threshold,msg_len,p=0.95,R=1e4,method='EWC'):
+    def eval_psud(self,threshold,msg_len,p=0.95,R=1e4,method='EWC',method_weight = None):
         """
         Determine the probability of successful delivery of a message
 
@@ -477,9 +480,9 @@ class evaluate():
         
         # Calculate test chains for this threshold, if we don't already have them
         if(method not in self.test_chains):
-            self.get_test_chains(method,threshold)
+            self.get_test_chains(method,threshold,method_weight=method_weight)
         elif(threshold not in self.test_chains[method]):
-            self.get_test_chains(method,threshold)
+            self.get_test_chains(method,threshold,method_weight=method_weight)
         # if(threshold not in self.test_chains):
         #     self.get_test_chains(threshold)
         
@@ -501,6 +504,9 @@ class evaluate():
         
         
         return((psud,ci))
+    
+    def clear(self):
+        self.test_chains = dict()
     
 
 #--------------------------------[main]---------------------------------------
@@ -552,6 +558,8 @@ if(__name__ == "__main__"):
                           fs = args.fs,
                           use_reprocess=args.no_reprocess)
     
+    
+    
     for threshold in args.threshold:
         print("----Intelligibility Success threshold = {}----".format(threshold))
         print("Results shown as Psud(t) = mean, (95% C.I.)")
@@ -583,7 +591,10 @@ if(__name__ == "__main__"):
     #                              match))
     
 # Test Analog direct:
-# runfile('D:/MCV_671DRDOG/psud/PSuD_eval.py', wdir='D:/MCV_671DRDOG/psud', args = 'Rcapture_Analog-direct_11-Feb-2021_14-23-10 Rcapture_Analog-direct_11-Feb-2021_11-45-21 Rcapture_Analog-direct_11-Feb-2021_09-51-59 Rcapture_Analog-direct_11-Feb-2021_06-22-06 -p data -m 1 5 10 -t 0.5 0.7 0.9 --method ARF')
+# runfile('D:/MCV_671DRDOG/psud/PSuD_eval.py', wdir='D:/MCV_671DRDOG/psud', args = 'Rcapture_Analog-direct_11-Feb-2021_14-23-10 Rcapture_Analog-direct_11-Feb-2021_11-45-21 Rcapture_Analog-direct_11-Feb-2021_09-51-59 Rcapture_Analog-direct_11-Feb-2021_06-22-06 -p data -m 1 3 5 10 -t 0.5 0.7 0.9 --method ARF')
 
 # Test P25 Direct
-# runfile('D:/MCV_671DRDOG/psud/PSuD_eval.py', wdir='D:/MCV_671DRDOG/psud', args = 'capture_P25-direct_22-Feb-2021_14-18-29 capture_P25-direct_22-Feb-2021_12-24-20 capture_P25-direct_22-Feb-2021_10-02-11 capture_P25-direct_23-Feb-2021_07-01-38 -p data -m 1 5 10 -t 0.5 0.7 0.9 --method ARF')
+# runfile('D:/MCV_671DRDOG/psud/PSuD_eval.py', wdir='D:/MCV_671DRDOG/psud', args = 'capture_P25-direct_22-Feb-2021_14-18-29 capture_P25-direct_22-Feb-2021_12-24-20 capture_P25-direct_22-Feb-2021_10-02-11 capture_P25-direct_23-Feb-2021_07-01-38 -p data -m 1 3 5 10 -t 0.5 0.7 0.9 --method ARF')
+
+# Test P25 Trunked Phase 1
+# runfile('D:/MCV_671DRDOG/psud/PSuD_eval.py', wdir='D:/MCV_671DRDOG/psud', args = 'capture_P25-Trunked-p1_23-Feb-2021_11-28-27 capture_P25-Trunked-p1_23-Feb-2021_09-03-52 capture_P25-Trunked-p1_24-Feb-2021_07-16-10 capture_P25-Trunked-p1_23-Feb-2021_13-24-39 -p data -t 0.5 0.7 0.9 -m 1 3 5 10 --method ARF')
