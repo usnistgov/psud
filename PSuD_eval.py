@@ -628,3 +628,6 @@ if(__name__ == "__main__"):
 
 # Test P25 Trunked Phase 1
 # runfile('D:/MCV_671DRDOG/psud/PSuD_eval.py', wdir='D:/MCV_671DRDOG/psud', args = 'capture_P25-Trunked-p1_23-Feb-2021_11-28-27 capture_P25-Trunked-p1_23-Feb-2021_09-03-52 capture_P25-Trunked-p1_24-Feb-2021_07-16-10 capture_P25-Trunked-p1_23-Feb-2021_13-24-39 -p data -t 0.5 0.7 0.9 -m 1 3 5 10 --method ARF')
+
+# Test P25 Trunked Phase 2
+# runfile('D:/MCV_671DRDOG/psud/PSuD_eval.py', wdir='D:/MCV_671DRDOG/psud', args = 'capture_P25-P2_25-Feb-2021_07-54-07 capture_P25-P2_25-Feb-2021_09-52-10 capture_P25-P2_24-Feb-2021_09-25-15 capture_P25-P2_24-Feb-2021_12-16-08 -p data -t 0.5 0.7 0.9 -m 1 3 5 10 --method ARF')
