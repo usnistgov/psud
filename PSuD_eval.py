@@ -210,6 +210,9 @@ class evaluate():
             #         warnings.warn("Cutpoints being overwritten: {}".format(updates))
                 
             # tests_cp = {**tests_cp, **test_cp}
+        # Ensure that tests has unique row index
+        nrow,_ = tests.shape
+        tests.index = np.arange(nrow)
         return((tests,tests_cp))
     
     def check_reprocess(self,fname):
@@ -286,7 +289,7 @@ class evaluate():
         cp = pd.read_csv(fpath)
         return(cp)
     
-    def get_test_chains(self,threshold):
+    def get_test_chains(self,method,threshold,method_weight = None):
         """
         Determine longest successful chain of words for each trial of a test
 
@@ -303,8 +306,28 @@ class evaluate():
         """
         chains = []
         times = []
+        
+        if(method =="ARF"):
+            method_intell = self.filter_intelligibility(self.test_dat.filter(regex="W\d+_Int"),
+                                                     weight=method_weight)
+        elif(method == "AMI"):
+            if(method_weight is not None):
+                warnings.warn("Method weight passed to AMI, will not be used")
+            method_intell = self.smooth_intelligibility(self.test_dat.filter(regex="W\d+_Int"))
+        elif(method == "EWC"):
+            if(method_weight is not None):
+                warnings.warn("Method weight passed to EWC, will not be used")
+            method_intell = self.test_dat.filter(regex="W\d+_Int")
+        else:
+            raise ValueError('Invalid method passed: {}'.format(method))
+        
         for ix,trial in self.test_dat.iterrows():
-            chain_len = self.get_trial_chain_length(trial,threshold=threshold)
+            chain_len = self.get_trial_chain_length(method_intell.loc[ix],threshold)
+            # if(method == "EWC"):
+            #     chain_len = self.get_trial_chain_length(trial.filter(regex='W\d+_Int'),threshold=threshold)
+            # elif(method == "ARF"):
+            #     chain_len = self.get_trial_chain_length(arf_intell.loc[ix],threshold=threshold)
+                # chain_len = None
             chains.append(chain_len)
             
             # Get clip cutpoints
@@ -312,7 +335,12 @@ class evaluate():
             chain_time = self.chain2time(clip_cp,chain_len)
             times.append(chain_time)
         np_chains = np.array(chains)
-        self.test_chains[threshold] = np_chains
+        if(method in self.test_chains):
+            self.test_chains[method][threshold] = np_chains
+        else:
+            self.test_chains[method] = {threshold: np_chains}
+                
+        # self.test_chains[threshold] = np_chains
         return(np_chains)
     
     def get_trial_chain_length(self,trial, threshold):
@@ -332,24 +360,32 @@ class evaluate():
             Number of words that achieved intelligibility greater than threshold
 
         """
-        # flag to determine if chain is still active
-        chain = True
-        # Length of current chain
-        chain_len = 0
-        
-        while(chain):
-            # Convert chain length to word
-            colname = "W{}_Int".format(chain_len)
-            if colname in trial and trial[colname] >= threshold:
-                #Check that both colname exists in trial and that trial success 
-                #is greater than threshold
-                
-                # Increment chain length
-                chain_len += 1
-            else:
-                # Break chain
-                chain = False
+             
+        failures = np.where(~(trial >= threshold))
+        if(failures[0].size == 0):
+            chain_len = len(trial)
+        else:
+            chain_len = failures[0][0]
         return(chain_len)
+        # # Length of current chain
+        # chain_len = 0
+        
+        # for word_int in trial:t
+        #     if(word_int)
+        
+        # while(chain):
+        #     # Convert chain length to word
+        #     colname = "W{}_Int".format(chain_len)
+        #     if colname in trial and trial[colname] >= threshold:
+        #         #Check that both colname exists in trial and that trial success 
+        #         #is greater than threshold
+                
+        #         # Increment chain length
+        #         chain_len += 1
+        #     else:
+        #         # Break chain
+        #         chain = False
+        # return(chain_len)
     
     def chain2time(self,clip_cp,chain_length):
         """
@@ -395,8 +431,46 @@ class evaluate():
         chain_time = (clip_cp.loc[success_ix,'End']+1)/self.fs
         
         return(chain_time)
+    
+    def filter_intelligibility(self,int_data,weight=0.5):
         
-    def eval_psud(self,threshold,msg_len,p=0.95,R=1e4):
+        # # Get number ofrows in data
+        # nrow,_ = int_data.shape
+        # # Ensure that int_data has unique row names
+        # int_data.index = np.arange(nrow)
+        
+        # Initialize new data frame
+        fint = pd.DataFrame(columns = int_data.columns)
+        
+        for ix,trial in  int_data.iterrows():
+            # initialize array to store filtered trial data in
+            ftrial = np.empty(len(trial))
+            for wix, wint in enumerate(trial):
+                if(wix == 0):
+                    # For first word, intelligibility is just first word intelligibility
+                    ftrial[wix] = trial[wix]
+                else:
+                    ftrial[wix] = weight*trial[wix] + (1-weight)*ftrial[wix-1]
+            
+            # Store new trial intelligibility
+            fint.loc[ix] = ftrial
+        return(fint)
+            
+    def smooth_intelligibility(self,int_data):
+        
+        # Initialize new data frame
+        fint = pd.DataFrame(columns = int_data.columns)
+        for ix,trial in  int_data.iterrows():
+            # initialize array to store filtered trial data in
+            ftrial = np.empty(len(trial))
+            for wix, wint in enumerate(trial):
+                # Average intelligibility up to this word
+                ftrial[wix] = np.mean(trial[:(wix+1)])
+            # Store new trial intelligibility    
+            fint.loc[ix] = ftrial
+        return(fint)
+    
+    def eval_psud(self,threshold,msg_len,p=0.95,R=1e4,method='EWC',method_weight = None):
         """
         Determine the probability of successful delivery of a message
 
@@ -428,11 +502,15 @@ class evaluate():
         # TODO: if msg_len > self.max_audio_length report NaN
         
         # Calculate test chains for this threshold, if we don't already have them
-        if(threshold not in self.test_chains):
-            self.get_test_chains(threshold)
+        if(method not in self.test_chains):
+            self.get_test_chains(method,threshold,method_weight=method_weight)
+        elif(threshold not in self.test_chains[method]):
+            self.get_test_chains(method,threshold,method_weight=method_weight)
+        # if(threshold not in self.test_chains):
+        #     self.get_test_chains(threshold)
         
         # Get relevant test chains
-        test_chains = self.test_chains[threshold]
+        test_chains = self.test_chains[method][threshold]
         
         # Label chains as success or failure
         msg_success = test_chains >= msg_len
@@ -449,6 +527,9 @@ class evaluate():
         
         
         return((psud,ci))
+    
+    def clear(self):
+        self.test_chains = dict()
     
 
 #--------------------------------[main]---------------------------------------
@@ -488,6 +569,14 @@ if(__name__ == "__main__"):
                         default = True,
                         action = "store_false",
                         help = "Do not use reprocessed data if it exists.")
+    parser.add_argument('--method',
+                        default = "EWC",
+                        type = str,
+                        help = "PSuD method to use. Must be one of 'EWC' or 'ARF'.")
+    parser.add_argument('-w','--method-weight',
+                        default = 0.5,
+                        type = float,
+                        help = 'Weight for method filters if applicable.')
     
     args = parser.parse_args()
     
@@ -496,12 +585,17 @@ if(__name__ == "__main__"):
                           fs = args.fs,
                           use_reprocess=args.no_reprocess)
     
+    
+    
     for threshold in args.threshold:
         print("----Intelligibility Success threshold = {}----".format(threshold))
         print("Results shown as Psud(t) = mean, (95% C.I.)")
         msg_str = "PSuD({}) = {:.4f}, ({:.4f},{:.4f})"
         for message_len in args.message_length:    
-            psud_m,psud_ci = t_proc.eval_psud(threshold,message_len)
+            psud_m,psud_ci = t_proc.eval_psud(threshold,
+                                              message_len,
+                                              method = args.method,
+                                              method_weight = args.method_weight)
             
             print(msg_str.format(message_len,
                                   psud_m,
@@ -526,3 +620,14 @@ if(__name__ == "__main__"):
     #                              e_psud,
     #                              match))
     
+# Test Analog direct:
+# runfile('D:/MCV_671DRDOG/psud/PSuD_eval.py', wdir='D:/MCV_671DRDOG/psud', args = 'Rcapture_Analog-direct_11-Feb-2021_14-23-10 Rcapture_Analog-direct_11-Feb-2021_11-45-21 Rcapture_Analog-direct_11-Feb-2021_09-51-59 Rcapture_Analog-direct_11-Feb-2021_06-22-06 -p data -m 1 3 5 10 -t 0.5 0.7 0.9 --method ARF')
+
+# Test P25 Direct
+# runfile('D:/MCV_671DRDOG/psud/PSuD_eval.py', wdir='D:/MCV_671DRDOG/psud', args = 'capture_P25-direct_22-Feb-2021_14-18-29 capture_P25-direct_22-Feb-2021_12-24-20 capture_P25-direct_22-Feb-2021_10-02-11 capture_P25-direct_23-Feb-2021_07-01-38 -p data -m 1 3 5 10 -t 0.5 0.7 0.9 --method ARF')
+
+# Test P25 Trunked Phase 1
+# runfile('D:/MCV_671DRDOG/psud/PSuD_eval.py', wdir='D:/MCV_671DRDOG/psud', args = 'capture_P25-Trunked-p1_23-Feb-2021_11-28-27 capture_P25-Trunked-p1_23-Feb-2021_09-03-52 capture_P25-Trunked-p1_24-Feb-2021_07-16-10 capture_P25-Trunked-p1_23-Feb-2021_13-24-39 -p data -t 0.5 0.7 0.9 -m 1 3 5 10 --method ARF')
+
+# Test P25 Trunked Phase 2
+# runfile('D:/MCV_671DRDOG/psud/PSuD_eval.py', wdir='D:/MCV_671DRDOG/psud', args = 'capture_P25-P2_25-Feb-2021_07-54-07 capture_P25-P2_25-Feb-2021_09-52-10 capture_P25-P2_24-Feb-2021_09-25-15 capture_P25-P2_24-Feb-2021_12-16-08 -p data -t 0.5 0.7 0.9 -m 1 3 5 10 --method ARF')
