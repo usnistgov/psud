@@ -308,16 +308,25 @@ class evaluate():
         times = []
         
         if(method =="ARF"):
-            arf_intell = self.filter_intelligibility(self.test_dat.filter(regex="W\d+_Int"),
+            method_intell = self.filter_intelligibility(self.test_dat.filter(regex="W\d+_Int"),
                                                      weight=method_weight)
-        elif(method == "EWC" and method_weight is not None):
-            warnings.warn("Method weight passed to EWC, will not be used")
+        elif(method == "AMI"):
+            if(method_weight is not None):
+                warnings.warn("Method weight passed to AMI, will not be used")
+            method_intell = self.smooth_intelligibility(self.test_dat.filter(regex="W\d+_Int"))
+        elif(method == "EWC"):
+            if(method_weight is not None):
+                warnings.warn("Method weight passed to EWC, will not be used")
+            method_intell = self.test_dat.filter(regex="W\d+_Int")
+        else:
+            raise ValueError('Invalid method passed: {}'.format(method))
         
         for ix,trial in self.test_dat.iterrows():
-            if(method == "EWC"):
-                chain_len = self.get_trial_chain_length(trial.filter(regex='W\d+_Int'),threshold=threshold)
-            elif(method == "ARF"):
-                chain_len = self.get_trial_chain_length(arf_intell.loc[ix],threshold=threshold)
+            chain_len = self.get_trial_chain_length(method_intell.loc[ix],threshold)
+            # if(method == "EWC"):
+            #     chain_len = self.get_trial_chain_length(trial.filter(regex='W\d+_Int'),threshold=threshold)
+            # elif(method == "ARF"):
+            #     chain_len = self.get_trial_chain_length(arf_intell.loc[ix],threshold=threshold)
                 # chain_len = None
             chains.append(chain_len)
             
@@ -430,22 +439,36 @@ class evaluate():
         # # Ensure that int_data has unique row names
         # int_data.index = np.arange(nrow)
         
-        
+        # Initialize new data frame
         fint = pd.DataFrame(columns = int_data.columns)
-        # fint = int_data.copy()
+        
         for ix,trial in  int_data.iterrows():
-            
+            # initialize array to store filtered trial data in
             ftrial = np.empty(len(trial))
             for wix, wint in enumerate(trial):
                 if(wix == 0):
+                    # For first word, intelligibility is just first word intelligibility
                     ftrial[wix] = trial[wix]
                 else:
                     ftrial[wix] = weight*trial[wix] + (1-weight)*ftrial[wix-1]
             
-            
+            # Store new trial intelligibility
             fint.loc[ix] = ftrial
         return(fint)
             
+    def smooth_intelligibility(self,int_data):
+        
+        # Initialize new data frame
+        fint = pd.DataFrame(columns = int_data.columns)
+        for ix,trial in  int_data.iterrows():
+            # initialize array to store filtered trial data in
+            ftrial = np.empty(len(trial))
+            for wix, wint in enumerate(trial):
+                # Average intelligibility up to this word
+                ftrial[wix] = np.mean(trial[:(wix+1)])
+            # Store new trial intelligibility    
+            fint.loc[ix] = ftrial
+        return(fint)
     
     def eval_psud(self,threshold,msg_len,p=0.95,R=1e4,method='EWC',method_weight = None):
         """
@@ -550,6 +573,10 @@ if(__name__ == "__main__"):
                         default = "EWC",
                         type = str,
                         help = "PSuD method to use. Must be one of 'EWC' or 'ARF'.")
+    parser.add_argument('-w','--method-weight',
+                        default = 0.5,
+                        type = float,
+                        help = 'Weight for method filters if applicable.')
     
     args = parser.parse_args()
     
@@ -565,7 +592,10 @@ if(__name__ == "__main__"):
         print("Results shown as Psud(t) = mean, (95% C.I.)")
         msg_str = "PSuD({}) = {:.4f}, ({:.4f},{:.4f})"
         for message_len in args.message_length:    
-            psud_m,psud_ci = t_proc.eval_psud(threshold,message_len,method = args.method)
+            psud_m,psud_ci = t_proc.eval_psud(threshold,
+                                              message_len,
+                                              method = args.method,
+                                              method_weight = args.method_weight)
             
             print(msg_str.format(message_len,
                                   psud_m,
