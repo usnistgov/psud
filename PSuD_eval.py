@@ -295,6 +295,19 @@ class evaluate():
 
         Parameters
         ----------
+        method : str
+            PSuD method to determine message success. One of EWC 
+            (every word critical), AMI (average message intelligibility), or
+            ARF (autoregressive filter). ARF relies on an additional 
+            method_weight parameter as it is of the form 
+            method_weight*(int of word k) + (1-method_weight)*(int of word k-1)
+            
+        
+        method_weight : float
+            Weighting parameter to control impact of a single word for a 
+            method's revised intelligibility. Generally structured so that
+            method_weight*word_int + (1-method_weight)*separate_factor.
+        
         threshold : float
             Intelligibility value used to determine whether a word was delivered successfully or not. Between [0,1]
 
@@ -308,12 +321,12 @@ class evaluate():
         times = []
         
         if(method =="ARF"):
-            method_intell = self.filter_intelligibility(self.test_dat.filter(regex="W\d+_Int"),
+            method_intell = self.ARF_intelligibility(self.test_dat.filter(regex="W\d+_Int"),
                                                      weight=method_weight)
         elif(method == "AMI"):
             if(method_weight is not None):
                 warnings.warn("Method weight passed to AMI, will not be used")
-            method_intell = self.smooth_intelligibility(self.test_dat.filter(regex="W\d+_Int"))
+            method_intell = self.AMI_intelligibility(self.test_dat.filter(regex="W\d+_Int"))
         elif(method == "EWC"):
             if(method_weight is not None):
                 warnings.warn("Method weight passed to EWC, will not be used")
@@ -432,7 +445,33 @@ class evaluate():
         
         return(chain_time)
     
-    def filter_intelligibility(self,int_data,weight=0.5):
+    def ARF_intelligibility(self,int_data,weight=0.5):
+        """
+        Autoregressive filter on intelligibility.
+        
+        Filter intelligibility by trial through an autoregressive filter (ARF),
+        ARF relies on an additional method_weight parameter as it is of the 
+        form 
+        method_weight*(int of word k) + (1-method_weight)*(int of word k-1).
+        If int_data is nxm, the results are an nxm dataframe. The first column
+        of the output will always be identical to the first column of the 
+        input.
+
+        Parameters
+        ----------
+        int_data : pd.DataFrame
+            Data frame with each row representing a trial and each column 
+            containing intelligibility data for a subsequent word in a trial.
+            
+        weight : float, optional
+            Weight of a given word in the filter. The default is 0.5.
+
+        Returns
+        -------
+        pd.DataFrame
+            Filtered intelligibility results.
+
+        """
         
         # # Get number ofrows in data
         # nrow,_ = int_data.shape
@@ -456,7 +495,25 @@ class evaluate():
             fint.loc[ix] = ftrial
         return(fint)
             
-    def smooth_intelligibility(self,int_data):
+    def AMI_intelligibility(self,int_data):
+        """
+        Average message intelligibility up to each word in a message.
+        
+        Smooth intelligibility by calculating average message intelligibility
+        up to each word in the message.
+
+        Parameters
+        ----------
+        int_data : pd.DataFrame
+            Data frame with each row representing a trial and each column 
+            containing intelligibility data for a subsequent word in a trial.
+
+        Returns
+        -------
+        pd.DataFrame
+            Smoothed intelligibility results.
+
+        """
         
         # Initialize new data frame
         fint = pd.DataFrame(columns = int_data.columns)
@@ -483,12 +540,28 @@ class evaluate():
         ----------
         threshold : float
             Intelligibility value used to determine whether a word was delivered successfully or not. Between [0,1]
+            
         msg_len : float
             Length of the message.
+            
         p : float, optional
             Level of confidence to use in confidence interval calculation. Value must be in [0,1]. The default is 0.95.
+            
         R : int, optional
             Number of repetitions used in uncertainy calculation using bootstrap resampling. The default is 1e4.
+            
+        method : str
+            PSuD method to determine message success. One of EWC 
+            (every word critical), AMI (average message intelligibility), or
+            ARF (autoregressive filter). ARF relies on an additional 
+            method_weight parameter as it is of the form 
+            method_weight*(int of word k) + (1-method_weight)*(int of word k-1)
+            
+        
+        method_weight : float
+            Weighting parameter to control impact of a single word for a 
+            method's revised intelligibility. Generally structured so that
+            method_weight*word_int + (1-method_weight)*separate_factor.
 
         Returns
         -------
