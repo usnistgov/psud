@@ -65,7 +65,10 @@ def plot_sweep(results,outpath):
     lengths = np.unique(results['Length'])
     thresholds = np.unique(results['Threshold'])
     
-    marker = itertools.cycle(('+', 'v', 'o', '*')) 
+    marker_set = ('+', 'v', 'o', '*')
+    if(len(marker_set) > len(thresholds)):
+        marker_set = marker_set[:len(thresholds)]
+    marker = itertools.cycle(marker_set) 
     
     ncol = len(lengths)
     fig, ax = plt.subplots(1,ncol,figsize=(40,20))  # Create a figure and an axes.
@@ -113,6 +116,53 @@ def plot_sweep(results,outpath):
         # ax[1][pix].legend()
     plt.savefig(outpath)
         # plt.legend(handler_map={plots[0]: HandlerLine2D(numpoints=4)})
+def condensed_plot(results,outpath):
+    """
+    Don't worry about weights, just fix one and compare
+
+    Parameters
+    ----------
+    results : TYPE
+        DESCRIPTION.
+    outpath : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
+    ARF_weight = 0.5
+    
+    methods = np.unique(results['Method'])
+    thresholds = np.unique(results['Threshold'])
+    
+    color = itertools.cycle(("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7"))
+    
+    marker_set = ('+', 'v', 'o', '*')
+    if(len(marker_set) > len(thresholds)):
+        marker_set = marker_set[:len(thresholds)]
+    marker = itertools.cycle(marker_set) 
+    
+    fig,ax = plt.subplots(figsize=(20,10))
+    for method in methods:
+        mcolor = next(color)
+        
+        for thresh in thresholds:
+            label_str = '{} - {}'.format(method,thresh)
+            if(method == 'ARF'):
+                fdf = results[(results['Method'] == method) & (results['Threshold'] == thresh) & (results['Weight'] == ARF_weight)]
+            else:
+                fdf = results[(results['Method'] == method) & (results['Threshold'] == thresh)]
+            ax.plot(fdf['Length'],fdf['PSuD'],color = mcolor,marker = next(marker),label = label_str)
+    ax.set_ylim([0,1])
+    ax.grid()
+    # ax.set_title('PSuD({}) Param Sweep'.format(mlen))
+    ax.set_xlabel('Message Length')
+    ax.set_ylabel('PSuD')
+    ax.legend()
+    
+    plt.savefig(outpath)
     
 def new_plot(results):
     lengths = np.unique(results['Length'])
@@ -194,6 +244,7 @@ if(__name__ == "__main__"):
         plotname = 'sweep_{}.png'.format(datetime.datetime.now().strftime('%y-%m-%d_%H-%M-%S'))
     
     plot_sweep(results,outpath=plotname)
+    condensed_plot(results,outpath = plotname.replace('.png','-condensed.png'))
     #TODO: Can we call R from python?
                         
                 
