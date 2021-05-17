@@ -610,17 +610,17 @@ class measure:
         rec_dat=mcvqoe.audio_float(rec_dat)
         
         #------------------------[calculate M2E]------------------------
-        dly_res = mcvqoe.ITS_delay_est(self.y[clip_index], rec_dat, "f", fsamp=self.fs,min_corr=self.m2e_min_corr)
+        pos,dly = mcvqoe.ITS_delay_est(self.y[clip_index], rec_dat, "f", fs=self.fs,min_corr=self.m2e_min_corr)
         
-        if(not np.any(dly_res)):
+        if(not pos):
             #M2E estimation did not go super well, try again but restrict M2E bounds to keyword spacing
-            dly_res = mcvqoe.ITS_delay_est(self.y[clip_index], rec_dat, "f", fsamp=self.fs,dlyBounds=(0,self.keyword_spacings[clip_index]))
+            pos,dly = mcvqoe.ITS_delay_est(self.y[clip_index], rec_dat, "f", fs=self.fs,dlyBounds=(0,self.keyword_spacings[clip_index]))
             
             good_m2e=False
         else:
             good_m2e=True
              
-        estimated_m2e_latency=dly_res[1] / self.fs
+        estimated_m2e_latency=dly / self.fs
 
         #---------------------[Compute intelligibility]---------------------
         
@@ -633,7 +633,7 @@ class measure:
         success=self.compute_intelligibility(
                                             rec_dat,
                                             self.cutpoints[clip_index],
-                                            dly_res[1],
+                                            dly,
                                             clip_base=bname
                                             )
 
