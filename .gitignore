@@ -10,3 +10,5 @@ tests.log
 #test type file
 test-type.txt
 
+#copy settings
+CopySettings.json
