@@ -9,9 +9,102 @@ import mcvqoe.gui
 import sys
 import mcvqoe.hardware
 
-#main function 
-if __name__ == "__main__":
 
+def simulate(channel_tech='clean',
+             channel_rate = None,
+             P_a1 = 1,
+             P_a2 = 1,
+             P_r = 1,
+             pInterval = 1,
+             audioPath = '',
+             overPlay=1.0,
+             trials = 100,
+             blockSize=512,#TODO: Does sim need this and bufSize
+             bufSize=20,
+             outdir='',
+             info={'Test Type':'default','Pre Test Notes':None},
+             time_expand = [100e-3 - 0.11e-3, 0.11e-3],
+             m2e_min_corr = 0.76,
+             intell_est='trial',
+             split_audio_dest=None,
+             full_audio_dir=False):
+               
+   #-------------------[Create Test object]---------------------------
+     
+    #create sim object
+    sim_obj=mcvqoe.simulation.QoEsim()
+    #TODO : set sim parameters
+
+    #create object here to use default values for arguments
+    test_obj=PSuD.measure()
+    test_obj = PSuD.measure(audioPath = audioPath,
+                 overPlay=overPlay,
+                 trials = trials,
+                 outdir=outdir,
+                 ri=sim_obj,# handled by sim object
+                 info=info,
+                 ptt_wait=0,# 0 for sim
+                 ptt_gap=0,# 0 for sim
+                 audioInterface=sim_obj,# handled by sim object
+                 time_expand = time_expand,
+                 m2e_min_corr = m2e_min_corr,
+                 get_post_notes = lambda : mcvqoe.gui.post_test(error_only=True),#only get test notes on error
+                 intell_est=intell_est,
+                 split_audio_dest=split_audio_dest,
+                 full_audio_dir=full_audio_dir)
+    
+    #------------------------------[Get test info]------------------------------
+    
+    gui=mcvqoe.gui.TestInfoGui(write_test_info=False)
+    
+    gui.chk_audio_function=lambda : mcvqoe.hardware.single_play(sim_obj,sim_obj,
+                                                    playback=True,
+                                                    ptt_wait=test_obj.ptt_wait)
+
+    #construct string for system name
+    system=sim_obj.channel_tech
+    if(sim_obj.channel_rate is not None):
+        system+=' at '+str(sim_obj.channel_rate)
+
+    gui.info_in['test_type'] = "simulation"
+    gui.info_in['tx_dev'] = "none"
+    gui.info_in['rx_dev'] = "none"
+    gui.info_in['system'] = system
+    gui.info_in['test_loc'] = "N/A"
+    test_obj.info=gui.show()
+
+    #check if the user canceled
+    if(test_obj.info is None):
+        print(f"\n\tExited by user")
+        sys.exit(1)
+    #-------------------------------[Probabilityiser]-------------------------
+    prob=mcvqoe.simulation.PBI()
+        
+    prob.P_a1=P_a1
+    prob.P_a2=P_a2
+    prob.P_r=P_r
+    prob.interval=pInterval
+    
+    
+    test_obj.info['PBI P_a1']=str(P_a1)
+    test_obj.info['PBI P_a2']=str(P_a2)
+    test_obj.info['PBI P_r'] =str(P_r)
+    test_obj.info['PBI interval']=str(pInterval)
+    
+    sim_obj.pre_impairment=prob.process_audio
+    
+    #--------------------------------[Run Test]--------------------------------
+    test_name = test_obj.run()
+    test_path = os.path.join(outdir,"data")
+    
+    print(f"Test complete. Data stored in {test_path}")
+    return(test_path)
+
+#-----------------------------[main function]-----------------------------
+if __name__ == "__main__":
+    #===============================
+    # Grab starts
+    #===============================
     #---------------------------[Create Test object]---------------------------
 
     #create sim object
@@ -31,6 +124,8 @@ if __name__ == "__main__":
     #set radio interface object to sim object
     test_obj.ri=sim_obj
 
+    #===============================
+    #===============================
     #-----------------------[Setup ArgumentParser object]-----------------------
 
     parser = argparse.ArgumentParser(
