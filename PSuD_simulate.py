@@ -81,9 +81,6 @@ def simulate(channel_tech='clean',
 
 #-----------------------------[main function]-----------------------------
 if __name__ == "__main__":
-    #===============================
-    # Grab starts
-    #===============================
     #---------------------------[Create Test object]---------------------------
 
     #create sim object
@@ -103,8 +100,6 @@ if __name__ == "__main__":
     #set radio interface object to sim object
     test_obj.ri=sim_obj
 
-    #===============================
-    #===============================
     #-----------------------[Setup ArgumentParser object]-----------------------
 
     parser = argparse.ArgumentParser(
