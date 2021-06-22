@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
 
-import PSuD_1way_1loc
+import .PSuD
 import argparse
 import os.path
 import scipy.io.wavfile
 import csv
 import sys
-from PSuD_eval import evaluate
+from .PSuD_eval import evaluate
 import tempfile
 
 import mcvqoe

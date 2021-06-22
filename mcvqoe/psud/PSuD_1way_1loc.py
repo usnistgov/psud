@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
-import PSuD
+import .PSuD
 
 import mcvqoe.gui
 import mcvqoe.hardware

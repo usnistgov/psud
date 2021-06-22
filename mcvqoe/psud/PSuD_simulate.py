@@ -2,8 +2,8 @@
 
 import argparse
 import os.path
-import PSuD
-from PSuD_eval import evaluate 
+import .PSuD
+from .PSuD_eval import evaluate 
 import mcvqoe.simulation
 import mcvqoe.gui
 import sys
