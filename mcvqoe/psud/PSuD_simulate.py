@@ -79,8 +79,7 @@ def simulate(channel_tech='clean',
     print(f"Test complete. Data stored in {test_path}")
     return(test_path)
 
-#-----------------------------[main function]-----------------------------
-if __name__ == "__main__":
+def main():
     #---------------------------[Create Test object]---------------------------
 
     #create sim object
@@ -272,3 +271,7 @@ if __name__ == "__main__":
     #print('Properties for test_obj:')
     #for k,v in vars(test_obj).items():
     #    print(f'\t{k} = {v}')
+
+#-----------------------------[main function]-----------------------------
+if __name__ == "__main__":
+    main()
