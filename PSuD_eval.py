@@ -334,20 +334,25 @@ class evaluate():
         else:
             raise ValueError('Invalid method passed: {}'.format(method))
         
-        for ix,trial in self.test_dat.iterrows():
-            chain_len = self.get_trial_chain_length(method_intell.loc[ix],threshold)
-            # if(method == "EWC"):
-            #     chain_len = self.get_trial_chain_length(trial.filter(regex='W\d+_Int'),threshold=threshold)
-            # elif(method == "ARF"):
-            #     chain_len = self.get_trial_chain_length(arf_intell.loc[ix],threshold=threshold)
-                # chain_len = None
-            chains.append(chain_len)
-            
-            # Get clip cutpoints
-            clip_cp = self.cps[trial['name']][trial['Filename']]
-            chain_time = self.chain2time(clip_cp,chain_len)
-            times.append(chain_time)
-        np_chains = np.array(chains)
+        if(method == "AMI"):
+            # Test chains don't matter for AMI
+            np_chains = method_intell
+        else:
+            for ix,trial in self.test_dat.iterrows():
+                
+                chain_len = self.get_trial_chain_length(method_intell.loc[ix],threshold)
+                # if(method == "EWC"):
+                #     chain_len = self.get_trial_chain_length(trial.filter(regex='W\d+_Int'),threshold=threshold)
+                # elif(method == "ARF"):
+                #     chain_len = self.get_trial_chain_length(arf_intell.loc[ix],threshold=threshold)
+                    # chain_len = None
+                chains.append(chain_len)
+                
+                # Get clip cutpoints
+                clip_cp = self.cps[trial['name']][trial['Filename']]
+                chain_time = self.chain2time(clip_cp,chain_len)
+                times.append(chain_time)
+            np_chains = np.array(chains)
         if(method in self.test_chains):
             self.test_chains[method][threshold] = np_chains
         else:
@@ -585,8 +590,17 @@ class evaluate():
         # Get relevant test chains
         test_chains = self.test_chains[method][threshold]
         
-        # Label chains as success or failure
-        msg_success = test_chains >= msg_len
+        if(method == "AMI"):
+            msg_success = []
+            for ix,trial in test_chains.iterrows():
+                check_ix = np.floor(msg_len - 1).astype(int)
+                msg_success.append(trial[check_ix] >= threshold)
+                
+        else:
+            # Label chains as success or failure
+            msg_success = test_chains >= msg_len
+            
+        
         # Calculate fraction of tests that match msg_len requirement
         psud = np.mean(msg_success)
         
