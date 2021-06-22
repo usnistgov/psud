@@ -6,9 +6,7 @@ import PSuD
 import mcvqoe.gui
 import mcvqoe.hardware
 
-# %%---------------------------------[main]-----------------------------------
-if __name__ == "__main__":
-
+def main():
     #---------------------------[Create Test object]---------------------------
 
     #create object here to use default values for arguments
@@ -92,3 +90,8 @@ if __name__ == "__main__":
                                                     ptt_wait=test_obj.ptt_wait))
         #------------------------------[Run Test]------------------------------
         test_obj.run()
+
+
+# %%---------------------------------[main]-----------------------------------
+if __name__ == "__main__":
+    main()
