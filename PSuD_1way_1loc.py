@@ -92,3 +92,4 @@ if __name__ == "__main__":
                                                     ptt_wait=test_obj.ptt_wait))
         #------------------------------[Run Test]------------------------------
         test_obj.run()
+        print(f'Test complete, data saved in \'{test_obj.data_filename}\'')

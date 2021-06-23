@@ -11,6 +11,19 @@ import sys
 import os.path
 import datetime
      
+def terminal_progress_update(prog_type,num_trials,current_trial):
+    if(prog_type=='proc'):
+        if(current_trial==0):
+            #we post processing
+            print('Processing test data')        
+        
+        print(f'Processing trial {current_trial+1} of {num_trials}')
+    else: # prog_type='test'
+        if(current_trial==0):
+            print(f'Starting Test of {num_trials} trials')
+        if(current_trial % 10 == 0):
+            print(f'-----Trial {current_trial} of {num_trials}')
+     
 class measure:
     """
     Class to run and reprocess Probability of Successful Delivery tests.
@@ -232,6 +245,7 @@ class measure:
         self.intell_est=intell_est
         self.split_audio_dest=split_audio_dest
         self.full_audio_dir=full_audio_dir
+        self.progress_update=terminal_progress_update
         
     def load_audio(self):
         """
@@ -500,9 +514,8 @@ class measure:
                 f.write(header)
             #--------------------------[Measurement Loop]--------------------------
             for trial in range(self.trials):
-                #-----------------------[Print Check]-------------------------
-                if(trial % 10 == 0):
-                    print('-----Trial {}'.format(trial))
+                #-----------------------[Update progress]-------------------------
+                self.progress_update('test',self.trials,trial)
                 #-----------------------[Get Trial Timestamp]-----------------------
                 ts=datetime.datetime.now().strftime('%d-%b-%Y %H:%M:%S')
                 #--------------------[Key Radio and play audio]--------------------
@@ -553,7 +566,6 @@ class measure:
             
             if(self.intell_est=='post'):
                 #process audio from temp file into real file
-                print('processing test data')
                 
                 #load temp file data
                 test_dat=self.load_test_data(temp_data_filename,load_audio=False)
@@ -579,8 +591,6 @@ class measure:
                 info={}
             #finish log entry
             mcvqoe.post(outdir=self.outdir,info=info)
-            
-        print(f'Test complete data saved in \'{self.data_filename}\'')
             
         return(base_filename)
         
@@ -825,7 +835,8 @@ class measure:
 
             for n,trial in enumerate(test_dat):
                 
-                print(f'Processing trial {n+1} of {len(test_dat)}',file=sys.stderr)
+                #update progress
+                self.progress_update('proc',self.trials,n)
 
                 #find clip index
                 clip_index=self.find_clip_index(trial['Filename'])
