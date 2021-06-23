@@ -11,7 +11,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://gitlab.nist.gov/gitlab/PSCR/MCV/psud",
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_namespace_packages(include=['mcvqoe.*']),
     include_package_data=True,
     use_scm_version={'write_to' : 'mcvqoe/psud/version.py'},
     setup_requires=['setuptools_scm'],
