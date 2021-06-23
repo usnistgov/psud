@@ -235,6 +235,7 @@ def main():
     
     #--------------------------------[Run Test]--------------------------------
     test_name = test_obj.run()
+    print(f'Test complete, data saved in \'{test_obj.data_filename}\'')
     test_path = os.path.join(args.outdir,"data")
     #--------------------------------[Evaluate Test]---------------------------
     # TODO: Make this fs determination smarter
