@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 
-import .PSuD
+from mcvqoe.psud import PSuD
 import argparse
 import os.path
 import scipy.io.wavfile
