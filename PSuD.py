@@ -118,6 +118,12 @@ class measure:
         This is set in the `run` method to the path to the output .csv file.
     full_audio_dir : bool, default=False
         read all .wav files in audioPath and ignore audioFiles
+    progress_update : function, default=terminal_progress_update
+        function to call to provide updates on test progress. This function
+        takes three arguments, progress type, total number of trials, current
+        trial number. The first argument, progress type is a string that will be
+        one of {'test','proc'} to indicate that the test is running trials or
+        processing data. 
 
     Methods
     -------
