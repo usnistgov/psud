@@ -12,6 +12,7 @@ import mcvqoe.hardware
 
 def simulate(channel_tech='clean',
              channel_rate = None,
+             channel_m2e=None,
              P_a1 = 1,
              P_a2 = 1,
              P_r = 1,
@@ -28,15 +29,78 @@ def simulate(channel_tech='clean',
              intell_est='trial',
              split_audio_dest=None,
              full_audio_dir=False,
-             show_gui = True,
              testID=None):
-               
-   #-------------------[Create Test object]---------------------------
-     
+    """
+    
+
+    Parameters
+    ----------
+    channel_tech : TYPE, optional
+        DESCRIPTION. The default is 'clean'.
+    channel_rate : TYPE, optional
+        DESCRIPTION. The default is None.
+    P_a1 : TYPE, optional
+        DESCRIPTION. The default is 1.
+    P_a2 : TYPE, optional
+        DESCRIPTION. The default is 1.
+    P_r : TYPE, optional
+        DESCRIPTION. The default is 1.
+    pInterval : TYPE, optional
+        DESCRIPTION. The default is 1.
+    audioPath : TYPE, optional
+        DESCRIPTION. The default is ''.
+    overPlay : TYPE, optional
+        DESCRIPTION. The default is 1.0.
+    trials : TYPE, optional
+        DESCRIPTION. The default is 100.
+    blockSize : TYPE, optional
+        DESCRIPTION. The default is 512.
+    bufSize, optional
+        DESCRIPTION. The default is 20.
+    outdir : TYPE, optional
+        DESCRIPTION. The default is ''.
+    info : TYPE, optional
+        DESCRIPTION. The default is {'Test Type':'simulation','Pre Test Notes':None}.
+    time_expand : TYPE, optional
+        DESCRIPTION. The default is [100e-3 - 0.11e-3, 0.11e-3].
+    m2e_min_corr : TYPE, optional
+        DESCRIPTION. The default is 0.76.
+    intell_est : TYPE, optional
+        DESCRIPTION. The default is 'trial'.
+    split_audio_dest : TYPE, optional
+        DESCRIPTION. The default is None.
+    full_audio_dir : TYPE, optional
+        DESCRIPTION. The default is False.
+    testID : TYPE, optional
+        DESCRIPTION. The default is None.
+
+    Returns
+    -------
+    None.
+
+    """
+
+    #------------------------[Sim Settings]-----------------------------
     #create sim object
     sim_obj=mcvqoe.simulation.QoEsim()
     #TODO : set sim parameters
-
+    sim_obj.channel_tech=channel_tech
+    
+    #set channel rate, check for None
+    if(channel_rate=='None'):
+        sim_obj.channel_rate=None
+    else:
+        sim_obj.channel_rate=channel_rate
+    if(channel_m2e is not None):
+        sim_obj.m2e_latency=channel_m2e
+    
+    #construct string for system name
+    system=sim_obj.channel_tech
+    if(sim_obj.channel_rate is not None):
+        system+=' at '+str(sim_obj.channel_rate)
+            
+   #-------------------[Create Test object]---------------------------
+    
     #create object here to use default values for arguments
     test_obj = PSuD.measure(audioPath = audioPath,
                  overPlay=overPlay,
@@ -62,6 +126,9 @@ def simulate(channel_tech='clean',
     prob.P_r=P_r
     prob.interval=pInterval
     
+    
+    #-----------------------------[Log Info]--------------------------
+
     test_obj.info['codec'] = channel_tech
     test_obj.info['codec-rate'] = channel_rate
     test_obj.info['PBI P_a1']=str(P_a1)
@@ -69,6 +136,12 @@ def simulate(channel_tech='clean',
     test_obj.info['PBI P_r'] =str(P_r)
     test_obj.info['PBI interval']=str(pInterval)
     test_obj.info['test-ID'] = testID
+    
+    test_obj.info['test_type'] = "simulation"
+    test_obj.info['tx_dev'] = "none"
+    test_obj.info['rx_dev'] = "none"
+    test_obj.info['system'] = system
+    test_obj.info['test_loc'] = "N/A"
     
     sim_obj.pre_impairment=prob.process_audio
     
