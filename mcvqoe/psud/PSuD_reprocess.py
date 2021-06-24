@@ -14,7 +14,9 @@ import mcvqoe
 
 #main function 
 if __name__ == "__main__":
-
+    main()
+    
+def main():
     #---------------------------[Create Test object]---------------------------
 
     #create object here to use default values for arguments

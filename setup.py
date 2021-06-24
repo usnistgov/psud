@@ -28,7 +28,9 @@ setuptools.setup(
     entry_points={
         'console_scripts':[
             'psud-sim=mcvqoe.psud.PSuD_simulate:main',
-            'psud-measure-1loc=mcvqoe.psud.PSuD_1way_1loc:main'
+            'psud-measure-1loc=mcvqoe.psud.PSuD_1way_1loc:main',
+            'psud-eval=mcvqoe.psud.PSuD_eval:main',
+            'psud-reprocess=mcvqoe.psud.PSuD_reprocess:main',
         ],
     },
     python_requires='>=3.6',

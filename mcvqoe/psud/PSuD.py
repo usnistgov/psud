@@ -11,18 +11,23 @@ import sys
 import os.path
 import datetime
      
-def terminal_progress_update(prog_type,num_trials,current_trial):
+def terminal_progress_update(prog_type,num_trials,current_trial,err_msg=""):
     if(prog_type=='proc'):
         if(current_trial==0):
-            #we post processing
+            #we are post processing
             print('Processing test data')        
         
         print(f'Processing trial {current_trial+1} of {num_trials}')
-    else: # prog_type='test'
+    else if(prog_type='test'):
         if(current_trial==0):
             print(f'Starting Test of {num_trials} trials')
         if(current_trial % 10 == 0):
             print(f'-----Trial {current_trial} of {num_trials}')
+    else if(prog_type='check-fail'):
+        print(f'On trial {current_trial+1} of {num_trials} : {err_msg}')
+        
+    #continue test
+    return True
      
 class measure:
     """
@@ -521,7 +526,11 @@ class measure:
             #--------------------------[Measurement Loop]--------------------------
             for trial in range(self.trials):
                 #-----------------------[Update progress]-------------------------
-                self.progress_update('test',self.trials,trial)
+                if(not self.progress_update('test',self.trials,trial)):
+                    #turn off LED
+                    self.ri.led(1, False)
+                    print('Exit from user')
+                    break
                 #-----------------------[Get Trial Timestamp]-----------------------
                 ts=datetime.datetime.now().strftime('%d-%b-%Y %H:%M:%S')
                 #--------------------[Key Radio and play audio]--------------------
