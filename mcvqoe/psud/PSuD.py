@@ -18,12 +18,12 @@ def terminal_progress_update(prog_type,num_trials,current_trial,err_msg=""):
             print('Processing test data')        
         
         print(f'Processing trial {current_trial+1} of {num_trials}')
-    else if(prog_type='test'):
+    elif(prog_type=='test'):
         if(current_trial==0):
             print(f'Starting Test of {num_trials} trials')
         if(current_trial % 10 == 0):
             print(f'-----Trial {current_trial} of {num_trials}')
-    else if(prog_type='check-fail'):
+    elif(prog_type=='check-fail'):
         print(f'On trial {current_trial+1} of {num_trials} : {err_msg}')
         
     #continue test
