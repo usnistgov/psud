@@ -621,7 +621,9 @@ class evaluate():
 
 #--------------------------------[main]---------------------------------------
 if(__name__ == "__main__"):
+    main()
     
+def main():
     # Set up argument parser
     parser = argparse.ArgumentParser(
         description = __doc__)
