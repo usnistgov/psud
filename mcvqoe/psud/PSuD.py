@@ -121,7 +121,7 @@ class measure:
     data_filename : string
         This is set in the `run` method to the path to the output .csv file.
     full_audio_dir : bool, default=False
-        read all .wav files in audio_path and ignore audio_files
+        read, and use, .wav files in audio_path, ignore audio_files and trials
     progress_update : function, default=terminal_progress_update
         function to call to provide updates on test progress. This function
         takes three arguments, progress type, total number of trials, current
@@ -222,7 +222,7 @@ class measure:
         split_audio_dest : string, default=None
             path where individually cut word clips are stored
         full_audio_dir : bool, default=False
-            read all .wav files in audio_path and ignore audio_files
+            read, and use, .wav files in audio_path, ignore audio_files and trials
         """
                  
         self.rng=np.random.default_rng()
@@ -431,6 +431,10 @@ class measure:
         #---------------------[Load Audio Files if Needed]---------------------
         if(not hasattr(self,'y')):
             self.load_audio()
+
+        if(self.full_audio_dir):
+            #overide trials to use all the trials
+            self.trials=len(self.y)
         
         #generate clip index
         self.clipi=self.rng.permutation(self.trials)%len(self.y)
