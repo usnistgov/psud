@@ -619,9 +619,6 @@ class evaluate():
         self.test_chains = dict()
     
 
-#--------------------------------[main]---------------------------------------
-if(__name__ == "__main__"):
-    main()
     
 def main():
     # Set up argument parser
@@ -720,3 +717,7 @@ def main():
 
 # Test P25 Trunked Phase 2
 # runfile('D:/MCV_671DRDOG/psud/PSuD_eval.py', wdir='D:/MCV_671DRDOG/psud', args = 'capture_P25-P2_25-Feb-2021_07-54-07 capture_P25-P2_25-Feb-2021_09-52-10 capture_P25-P2_24-Feb-2021_09-25-15 capture_P25-P2_24-Feb-2021_12-16-08 -p data -t 0.5 0.7 0.9 -m 1 3 5 10 --method ARF')
+
+#--------------------------------[main]---------------------------------------
+if(__name__ == "__main__"):
+    main()
