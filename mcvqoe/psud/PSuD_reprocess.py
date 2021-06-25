@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 
 
-from mcvqoe.psud import PSuD
 import argparse
+import csv
+import mcvqoe
 import os.path
 import scipy.io.wavfile
-import csv
 import sys
-from .PSuD_eval import evaluate
 import tempfile
 
-import mcvqoe
+from .PSuD import measure
+from .PSuD_eval import evaluate
 
 #main function 
 if __name__ == "__main__":
@@ -20,7 +20,7 @@ def main():
     #---------------------------[Create Test object]---------------------------
 
     #create object here to use default values for arguments
-    test_obj=PSuD_1way_1loc.PSuD()
+    test_obj=measure()
 
     #-----------------------[Setup ArgumentParser object]-----------------------
     
@@ -77,7 +77,7 @@ def main():
 
         print(f'Reprocessing test data to \'{out_name}\'',file=sys.stderr)
             
-        test_obj.post_process(test_dat,out_name,test_obj.audioPath)
+        test_obj.post_process(test_dat,out_name,test_obj.audio_path)
             
         if(print_outf):
             with open(out_name,'rt') as out_file:
@@ -88,7 +88,7 @@ def main():
         
         #--------------------------------[Evaluate Test]---------------------------
         # TODO: Make this fs determination smarter
-        t_proc = evaluate(out_name,wav_dirs=test_obj.audioPath,fs = 48e3)
+        t_proc = evaluate(out_name,wav_dirs=test_obj.audio_path,fs = 48e3)
         print("----Intelligibility Success threshold = {}----".format(args.intell_threshold))
         print("Results shown as Psud(t) = mean, (95% C.I.)")
         
