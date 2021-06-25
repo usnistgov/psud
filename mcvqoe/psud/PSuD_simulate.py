@@ -109,7 +109,7 @@ def simulate(channel_tech='clean',
                  info=info,
                  ptt_wait=0,# 0 for sim
                  ptt_gap=0,# 0 for sim
-                 audioInterface=sim_obj,# handled by sim object
+                 audio_interface=sim_obj,# handled by sim object
                  time_expand = time_expand,
                  m2e_min_corr = m2e_min_corr,
                  get_post_notes = lambda : mcvqoe.gui.post_test(error_only=True),#only get test notes on error
