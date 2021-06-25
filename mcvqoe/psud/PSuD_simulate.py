@@ -16,7 +16,7 @@ def simulate(channel_tech='clean',
              P_a1 = 1,
              P_a2 = 1,
              P_r = 1,
-             pInterval = 1,
+             p_interval = 1,
              audio_path = '',
              overplay=1.0,
              trials = 100,
@@ -45,7 +45,7 @@ def simulate(channel_tech='clean',
         DESCRIPTION. The default is 1.
     P_r : TYPE, optional
         DESCRIPTION. The default is 1.
-    pInterval : TYPE, optional
+    p_interval : TYPE, optional
         DESCRIPTION. The default is 1.
     audioPath : TYPE, optional
         DESCRIPTION. The default is ''.
@@ -123,7 +123,7 @@ def simulate(channel_tech='clean',
     prob.P_a1=P_a1
     prob.P_a2=P_a2
     prob.P_r=P_r
-    prob.interval=pInterval
+    prob.interval=p_interval
     
     
     #-----------------------------[Log Info]--------------------------
