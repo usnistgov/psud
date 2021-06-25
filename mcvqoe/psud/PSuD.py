@@ -11,6 +11,11 @@ import sys
 import os.path
 import datetime
      
+     
+#TODO : maybe we should put this in abcmrt?    
+#abcmrt only works with 48 kHz audio
+fs_abcmrt=48000
+     
 def terminal_progress_update(prog_type,num_trials,current_trial,err_msg=""):
     if(prog_type=='proc'):
         if(current_trial==0):
@@ -39,33 +44,27 @@ class measure:
     
     Attributes
     ----------
-    audioFiles : list
-        List of names of audio files. relative paths are relative to audioPath
-    audioPath : string
+    audio_files : list
+        List of names of audio files. relative paths are relative to audio_path
+    audio_path : string
         Path where audio is stored
     overPlay : float
         Number of extra seconds of audio to record at the end of a trial
     trials : int
         Number of times audio will be run through the system in the run method
-    blockSize : int
-        Size of blocks to use for audio play/record
-    bufSize : int
-        Size of buffer to use for audio play/record
     outdir : string
         Base directory where data is stored.
     ri : mcvqoe.RadioInterface or mcvqoe.QoEsim
         Object to use to key the audio channel
     info : dict
         Dictionary with test info to for the log entry
-    fs : int
-        Sample rate in Hz of audio. Only 48000 is supported at this time.
     ptt_wait : float
         Time to wait, in seconds, between keying the channel and playing audio
     ptt_gap : float
         Time to pause, in seconds, between one trial and the next
     rng : Generator
         Generator to use for random numbers
-    audioInterface : mcvqoe.AudioPlayer or mcvqoe.simulation.QoEsim
+    audio_interface : mcvqoe.AudioPlayer or mcvqoe.simulation.QoEsim
         interface to use to play and record audio on the communication channel
     time_expand : 1 or 2 element list or tuple of floats
         Amount of time, in seconds, of extra audio to use for intelligibility
@@ -122,7 +121,7 @@ class measure:
     data_filename : string
         This is set in the `run` method to the path to the output .csv file.
     full_audio_dir : bool, default=False
-        read all .wav files in audioPath and ignore audioFiles
+        read all .wav files in audio_path and ignore audio_files
     progress_update : function, default=terminal_progress_update
         function to call to provide updates on test progress. This function
         takes three arguments, progress type, total number of trials, current
@@ -149,9 +148,9 @@ class measure:
     >>>from PSuD_1way_1loc import PSuD
     >>>import mcvqoe.simulation
     >>>sim_obj=mcvqoe.simulation.QoEsim()
-    >>>test_obj=PSuD(ri=sim_obj,audioInterface=sim_obj,trials=10,
-    ...     audioPath='path/to/audio/',
-    ...     audioFiles=('F1_PSuD_Norm_10.wav','F3_PSuD_Norm_10.wav',
+    >>>test_obj=PSuD(ri=sim_obj,audio_interface=sim_obj,trials=10,
+    ...     audio_path='path/to/audio/',
+    ...     audio_files=('F1_PSuD_Norm_10.wav','F3_PSuD_Norm_10.wav',
     ...         'M3_PSuD_Norm_10.wav','M4_PSuD_Norm_10.wav'
     ...         )
     ... )
@@ -162,7 +161,7 @@ class measure:
     >>>from PSuD_1way_1loc import PSuD
     >>>test_obj=PSuD()
     >>>test_dat=test_obj.load_test_data('[path/to/outdir/]data/csv/test.csv')
-    >>>test_obj.post_process(test_dat,'rproc.csv',test_obj.audioPath)
+    >>>test_obj.post_process(test_dat,'rproc.csv',test_obj.audio_path)
     """
 
 
@@ -174,18 +173,15 @@ class measure:
     no_log=('y','clipi','data_dir','wav_data_dir','csv_data_dir','cutpoints','data_fields','time_expand_samples','num_keywords')
     
     def __init__(self,
-                 audioFiles=[],
-                 audioPath = '',
-                 overPlay=1.0,
+                 audio_files=[],
+                 audio_path = '',
                  trials = 100,
-                 blockSize=512,
-                 bufSize=20,
                  outdir='',
                  ri=None,
                  info={'Test Type':'default','Pre Test Notes':None},
                  ptt_wait=0.68,
                  ptt_gap=3.1,
-                 audioInterface=None,
+                 audio_interface=None,
                  time_expand = [100e-3 - 0.11e-3, 0.11e-3],
                  m2e_min_corr = 0.76,
                  get_post_notes = None,
@@ -197,18 +193,12 @@ class measure:
         
         Parameters
         ----------
-        audioFiles : list, default=[]
-            List of names of audio files. relative paths are relative to audioPath
-        audioPath : string, default=''
+        audio_files : list, default=[]
+            List of names of audio files. relative paths are relative to audio_path
+        audio_path : string, default=''
             Path where audio is stored
-        overPlay : float, default=1.0
-            Number of extra seconds of audio to record at the end of a trial
         trials : trials, default=100
             Number of times audio will be run through the system in the run method
-        blockSize : int, default=512
-            Size of blocks to use for audio play/record
-        bufSize : int, default=20
-            Size of buffer to use for audio play/record
         outdir : str, default=''
             Base directory where data is stored.
         ri : mcvqoe.RadioInterface, default=None
@@ -219,7 +209,7 @@ class measure:
             Time to wait, in seconds, between keying the channel and playing audio
         ptt_gap : float, default=3.1
             Time to pause, in seconds, between one trial and the next
-        audioInterface : mcvqoe.AudioPlayer ,default=None
+        audio_interface : mcvqoe.AudioPlayer ,default=None
             interface to use to play and record audio on the communication channel
         time_expand : 1 or 2 element array, default=[100e-3 - 0.11e-3, 0.11e-3]
             time to dilate cutpoints by
@@ -232,24 +222,20 @@ class measure:
         split_audio_dest : string, default=None
             path where individually cut word clips are stored
         full_audio_dir : bool, default=False
-            read all .wav files in audioPath and ignore audioFiles
+            read all .wav files in audio_path and ignore audio_files
         """
                  
-        self.fs=48e3
         self.rng=np.random.default_rng()
         #set default values
-        self.audioFiles=audioFiles
-        self.audioPath=audioPath
-        self.overPlay=overPlay
+        self.audio_files=audio_files
+        self.audio_path=audio_path
         self.trials=trials
-        self.blockSize=blockSize
-        self.bufSize=bufSize
         self.outdir=outdir
         self.ri=ri
         self.info=info
         self.ptt_wait=ptt_wait
         self.ptt_gap=ptt_gap
-        self.audioInterface=audioInterface
+        self.audio_interface=audio_interface
         self.time_expand=time_expand
         self.m2e_min_corr=m2e_min_corr
         self.get_post_notes=get_post_notes
@@ -262,10 +248,10 @@ class measure:
         """
         load audio files for use in test.
         
-        this loads audio from self.audioFiles and stores values in self.y,
+        this loads audio from self.audio_files and stores values in self.y,
         self.cutpoints and self.keyword_spacings
         In most cases run() will call this automatically but, it can be called
-        in the case that self.audioFiles is changed after run() is called
+        in the case that self.audio_files is changed after run() is called
 
         Parameters
         ----------
@@ -276,15 +262,15 @@ class measure:
         Raises
         ------
         ValueError
-            If self.audioFiles is empty
+            If self.audio_files is empty
         RuntimeError
-            If clip fs doesn't match self.fs
+            If clip fs is not 48 kHz
         """
-    
+   
         #if we are not using all files, check that audio files is not empty
-        if not self.audioFiles and not self.full_audio_dir:
+        if not self.audio_files and not self.full_audio_dir:
             #TODO : is this the right error to use here??
-            raise ValueError('Expected self.audioFiles to not be empty')
+            raise ValueError('Expected self.audio_files to not be empty')
 
         #check if we are making split audio
         if(self.split_audio_dest):
@@ -292,10 +278,10 @@ class measure:
             os.makedirs(self.split_audio_dest,exist_ok=True)
             
         if(self.full_audio_dir):
-            #override audioFiles
-            self.audioFiles=[]
-            #look through all things in audioPath
-            for f in os.scandir(self.audioPath):
+            #override audio_files
+            self.audio_files=[]
+            #look through all things in audio_path
+            for f in os.scandir(self.audio_path):
                 #make sure this is a file
                 if(f.is_file()): 
                     #get extension
@@ -303,7 +289,7 @@ class measure:
                     #check for .wav files
                     if(ext=='.wav'):
                         #add to list
-                        self.audioFiles.append(f.name)
+                        self.audio_files.append(f.name)
                 #TODO : recursive search?
 
         #list for input speech
@@ -313,14 +299,14 @@ class measure:
         #list for word spacing
         self.keyword_spacings=[]
         
-        for f in self.audioFiles:
+        for f in self.audio_files:
             #make full path from relative paths
-            f_full=os.path.join(self.audioPath,f)
+            f_full=os.path.join(self.audio_path,f)
             # load audio
             fs_file, audio_dat = scipy.io.wavfile.read(f_full)
             #check fs
-            if(fs_file != self.fs):
-                raise RuntimeError(f'Expected fs to be {self.fs} but got {fs_file} for {f}')
+            if(fs_file != fs_abcmrt):
+                raise RuntimeError(f'Expected fs to be {fs_abcmrt} but got {fs_file} for {f}')
             # Convert to float sound array and add to list
             self.y.append( mcvqoe.audio_float(audio_dat))
             #strip extension from file
@@ -348,7 +334,7 @@ class measure:
                     lens.append(ends[-1]-starts[-1])
             
             #word spacing is minimum distance converted to seconds
-            self.keyword_spacings.append(min(lens)/self.fs)
+            self.keyword_spacings.append(min(lens)/fs_abcmrt)
             
     def set_time_expand(self,t_ex):
         """
@@ -371,7 +357,9 @@ class measure:
             self.time_expand_samples=np.array([self.time_expand_samples,]*2)
 
         #convert to samples
-        self.time_expand_samples=np.ceil(self.time_expand_samples*self.fs).astype(int)
+        self.time_expand_samples=np.ceil(
+                self.time_expand_samples*fs_abcmrt
+                ).astype(int)
         
     def audio_clip_check(self):
     #TODO : this could probably be moved into load_audio, also not 100% sure this name makes sense
@@ -435,6 +423,9 @@ class measure:
             
 
         """
+        #-----------------------[Check audio sample rate]-----------------------
+        if(self.audio_interface.sample_rate != fs_abcmrt):
+            raise ValueError(f'audio_interface sample rate is {self.audio_interface.sample_rate} Hz but only {fs_abcmrt} Hz is supported')
         #---------------------------[Set time expand]---------------------------
         self.set_time_expand(self.time_expand)
         #---------------------[Load Audio Files if Needed]---------------------
@@ -445,17 +436,6 @@ class measure:
         self.clipi=self.rng.permutation(self.trials)%len(self.y)
         
         self.audio_clip_check()
-        
-        #-------------------[Find and Setup Audio interface]-------------------
-        dev=self.audioInterface.find_device()
-        
-        #set device
-        self.audioInterface.device=dev
-        
-        #set parameteres
-        self.audioInterface.buffersize=self.bufSize
-        self.audioInterface.blocksize=self.blockSize
-        self.audioInterface.overPlay=self.overPlay
 
         #-------------------------[Get Test Start Time]-------------------------
         self.info['Tstart']=datetime.datetime.now()
@@ -491,7 +471,7 @@ class measure:
         os.makedirs(wavdir, exist_ok=True)
         
         #get name of audio clip without path or extension
-        clip_names=[ os.path.basename(os.path.splitext(a)[0]) for a in self.audioFiles]
+        clip_names=[ os.path.basename(os.path.splitext(a)[0]) for a in self.audio_files]
 
         #get name of csv files with path and extension
         self.data_filename=os.path.join(csv_data_dir,f'{base_filename}.csv')
@@ -502,7 +482,7 @@ class measure:
         #write out Tx clips and cutpoints to files
         for dat,name,cp in zip(self.y,clip_names,self.cutpoints):
             out_name=os.path.join(wavdir,f'Tx_{name}')
-            scipy.io.wavfile.write(out_name+'.wav', int(self.fs), dat)
+            scipy.io.wavfile.write(out_name+'.wav', int(self.audio_interface.sample_rate), dat)
             mcvqoe.write_cp(out_name+'.csv',cp)
             
         #---------------------------[write log entry]---------------------------
@@ -547,7 +527,7 @@ class measure:
                 clip_name=os.path.join(wavdir,f'Rx{trial+1}_{clip_names[clip_index]}.wav')
                 
                 #play/record audio
-                self.audioInterface.play_record(self.y[clip_index],clip_name)
+                self.audio_interface.play_record(self.y[clip_index],clip_name)
                 
                 #un-push PTT
                 self.ri.ptt(False)
@@ -629,23 +609,23 @@ class measure:
         
         #---------------------[Load in recorded audio]---------------------
         fs,rec_dat = scipy.io.wavfile.read(fname)
-        if(self.fs != fs):
+        if(fs_abcmrt != fs):
             raise RuntimeError('Recorded sample rate does not match!')
         
         rec_dat=mcvqoe.audio_float(rec_dat)
         
         #------------------------[calculate M2E]------------------------
-        pos,dly = mcvqoe.ITS_delay_est(self.y[clip_index], rec_dat, "f", fs=self.fs,min_corr=self.m2e_min_corr)
+        pos,dly = mcvqoe.ITS_delay_est(self.y[clip_index], rec_dat, "f", fs=fs_abcmrt,min_corr=self.m2e_min_corr)
         
         if(not pos):
             #M2E estimation did not go super well, try again but restrict M2E bounds to keyword spacing
-            pos,dly = mcvqoe.ITS_delay_est(self.y[clip_index], rec_dat, "f", fs=self.fs,dlyBounds=(0,self.keyword_spacings[clip_index]))
+            pos,dly = mcvqoe.ITS_delay_est(self.y[clip_index], rec_dat, "f", fs=fs_abcmrt,dlyBounds=(0,self.keyword_spacings[clip_index]))
             
             good_m2e=False
         else:
             good_m2e=True
              
-        estimated_m2e_latency=dly / self.fs
+        estimated_m2e_latency=dly / fs_abcmrt
 
         #---------------------[Compute intelligibility]---------------------
         
@@ -708,7 +688,7 @@ class measure:
                 if(clip_base and isinstance(self.split_audio_dest, str)):
                     outname=os.path.join(self.split_audio_dest,f'{clip_base}_cp{cp_num}_w{cpw["Clip"]}.wav')
                     #write out audio
-                    scipy.io.wavfile.write(outname, int(self.fs), audio[start:end])
+                    scipy.io.wavfile.write(outname, int(fs_abcmrt), audio[start:end])
 
         #---------------------[Compute intelligibility]---------------------
         phi_hat,success=abcmrt.process(word_audio,word_num)
@@ -772,15 +752,15 @@ class measure:
         #check if we should load audio
         if(load_audio):
             #set audio file names to Tx file names
-            self.audioFiles=['Tx_'+name+'.wav' for name in clips]
+            self.audio_files=['Tx_'+name+'.wav' for name in clips]
             
             dat_name,_=os.path.splitext(os.path.basename(fname))
             
             if(audio_path is not None):
-                self.audioPath=audio_path
+                self.audio_path=audio_path
             else:
-                #set audioPath based on filename
-                self.audioPath=os.path.join(os.path.dirname(os.path.dirname(fname)),'wav',dat_name)
+                #set audio_path based on filename
+                self.audio_path=os.path.join(os.path.dirname(os.path.dirname(fname)),'wav',dat_name)
             
             #load audio data from files
             self.load_audio()
@@ -809,13 +789,13 @@ class measure:
         #this 
         name_re=re.compile(re.escape(name)+'(?![^.])')
         #get all matching indices
-        match=[idx for idx,clip in enumerate(self.audioFiles) if  name_re.search(clip)]
+        match=[idx for idx,clip in enumerate(self.audio_files) if  name_re.search(clip)]
         #check that a match was found
         if(not match):
-            raise RuntimeError(f'no audio clips found matching \'{name}\' found in {self.audioFiles}')
+            raise RuntimeError(f'no audio clips found matching \'{name}\' found in {self.audio_files}')
         #check that only one match was found
         if(len(match)!=1):
-            raise RuntimeError(f'multiple audio clips found matching \'{name}\' found in {self.audioFiles}')
+            raise RuntimeError(f'multiple audio clips found matching \'{name}\' found in {self.audio_files}')
         #return matching index
         return match[0]
         

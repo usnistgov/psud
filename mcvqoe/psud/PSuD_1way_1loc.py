@@ -13,27 +13,31 @@ def main():
     test_obj=PSuD.measure()
     #set end notes function
     test_obj.get_post_notes=mcvqoe.gui.post_test
+            
+    #-------------------------[Create audio interface]-------------------------
+    ap=mcvqoe.hardware.AudioPlayer()
+    test_obj.audio_interface=ap
 
     #-----------------------[Setup ArgumentParser object]-----------------------
 
     parser = argparse.ArgumentParser(
         description=__doc__)
     parser.add_argument(
-                        '-a', '--audioFiles', default=[],action="extend", nargs="+", type=str,metavar='FILENAME',
+                        '-a', '--audio-files', default=[],action="extend", nargs="+", type=str,metavar='FILENAME',
                         help='Path to audio files to use for test. Cutpoint files must also be present')
     parser.add_argument(
-                        '-f', '--audioPath', default=test_obj.audioPath, type=str,
+                        '-f', '--audio-path', default=test_obj.audio_path, type=str,
                         help='Path to look for audio files in. All audio file paths are relative to this unless they are absolute')
     parser.add_argument('-t', '--trials', type=int, default=test_obj.trials,metavar='T',
                         help='Number of trials to use for test. Defaults to %(default)d')
     parser.add_argument("-r", "--radioport", default="",metavar='PORT',
                         help="Port to use for radio interface. Defaults to the first"+
                         " port where a radio interface is detected")
-    parser.add_argument('-b', '--blockSize', type=int, default=test_obj.blockSize,metavar='SZ',
+    parser.add_argument('-b', '--blocksize', type=int, default=ap.blocksize,metavar='SZ',
                         help='Block size for transmitting audio (default: %(default)d)')
-    parser.add_argument('-q', '--bufferSize', type=int, default=test_obj.bufSize,dest='bufSize',metavar='SZ',
+    parser.add_argument('-q', '--buffersize', type=int, default=ap.buffersize,metavar='SZ',
                         help='Number of blocks used for buffering audio (default: %(default)d)')
-    parser.add_argument('-p', '--overPlay', type=float, default=test_obj.overPlay,metavar='DUR',
+    parser.add_argument('-p', '--overplay', type=float, default=ap.overplay,metavar='DUR',
                         help='The number of seconds to play silence after the audio is complete'+
                         '. This allows for all of the audio to be recorded when there is delay'+
                         ' in the system')
@@ -74,10 +78,15 @@ def main():
     for k,v in vars(args).items():
         if hasattr(test_obj,k):
             setattr(test_obj,k,v)
-            
-    #-------------------------[Create audio interface]-------------------------
     
-    test_obj.audioInterface=mcvqoe.hardware.AudioPlayer()
+    #---------------------[Set audio interface properties]---------------------
+    test_obj.audio_interface.blocksize=args.blocksize
+    test_obj.audio_interface.buffersize=args.buffersize
+    test_obj.audio_interface.overplay=args.overplay
+    
+    #set correct audio channels
+    test_obj.audio_interface.playback_chans={'tx_voice':0}
+    test_obj.audio_interface.rec_chans={'rx_voice':0}
     
     #---------------------------[Open RadioInterface]---------------------------
     
@@ -86,7 +95,7 @@ def main():
         #------------------------------[Get test info]------------------------------
         test_obj.info=mcvqoe.gui.pretest(args.outdir,
                     check_function=lambda : mcvqoe.hardware.single_play(
-                                                    test_obj.ri,test_obj.audioInterface,
+                                                    test_obj.ri,test_obj.audio_interface,
                                                     ptt_wait=test_obj.ptt_wait))
         #------------------------------[Run Test]------------------------------
         test_obj.run()

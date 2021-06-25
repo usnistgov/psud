@@ -16,8 +16,8 @@ def simulate(channel_tech='clean',
              P_a2 = 1,
              P_r = 1,
              pInterval = 1,
-             audioPath = '',
-             overPlay=1.0,
+             audio_path = '',
+             overplay=1.0,
              trials = 100,
              blockSize=512,#TODO: Does sim need this and bufSize
              bufSize=20,
@@ -34,12 +34,11 @@ def simulate(channel_tech='clean',
    #-------------------[Create Test object]---------------------------
      
     #create sim object
-    sim_obj=mcvqoe.simulation.QoEsim()
+    sim_obj=mcvqoe.simulation.QoEsim(overplay=overplay)
     #TODO : set sim parameters
 
     #create object here to use default values for arguments
-    test_obj = PSuD.measure(audioPath = audioPath,
-                 overPlay=overPlay,
+    test_obj = PSuD.measure(audio_path = audio_path,
                  trials = trials,
                  outdir=outdir,
                  ri=sim_obj,# handled by sim object
@@ -95,7 +94,7 @@ def main():
     test_obj.get_post_notes=lambda : mcvqoe.gui.post_test(error_only=True)
     
     #set audioInterface to sim object
-    test_obj.audioInterface=sim_obj
+    test_obj.audio_interface=sim_obj
     #set radio interface object to sim object
     test_obj.ri=sim_obj
 
@@ -104,21 +103,17 @@ def main():
     parser = argparse.ArgumentParser(
         description=__doc__)
     parser.add_argument(
-                        '-a', '--audioFiles', default=[],action="extend", nargs="+", type=str,metavar='FILENAME',
+                        '-a', '--audio-files', default=[],action="extend", nargs="+", type=str,metavar='FILENAME',
                         help='Path to audio files to use for test. Cutpoint files must also be present')
     parser.add_argument(
-                        '-f', '--audioPath', default=test_obj.audioPath, type=str,
+                        '-f', '--audio-path', default=test_obj.audio_path, type=str,
                         help='Path to look for audio files in. All audio file paths are relative to this unless they are absolute')
     parser.add_argument('-t', '--trials', type=int, default=test_obj.trials,metavar='T',
                         help='Number of trials to use for test. Defaults to %(default)d')
     parser.add_argument("-r", "--radioport", default="",metavar='PORT',
                         help="Port to use for radio interface. Defaults to the first"+
                         " port where a radio interface is detected")
-    parser.add_argument('-b', '--blockSize', type=int, default=test_obj.blockSize,metavar='SZ',
-                        help='Block size for transmitting audio (default: %(default)d)')
-    parser.add_argument('-q', '--bufferSize', type=int, default=test_obj.bufSize,dest='bufSize',metavar='SZ',
-                        help='Number of blocks used for buffering audio (default: %(default)d)')
-    parser.add_argument('-p', '--overPlay', type=float, default=test_obj.overPlay,metavar='DUR',
+    parser.add_argument('-p', '--overplay', type=float, default=sim_obj.overplay,metavar='DUR',
                         help='The number of seconds to play silence after the audio is complete'+
                         '. This allows for all of the audio to be recorded when there is delay'+
                         ' in the system')
@@ -180,6 +175,8 @@ def main():
 
     sim_obj.channel_tech=args.channel_tech
     
+    sim_obj.overplay=args.overplay
+    
     #set channel rate, check for None
     if(args.channel_rate=='None'):
         sim_obj.channel_rate=None
@@ -187,6 +184,10 @@ def main():
         sim_obj.channel_rate=args.channel_rate
         
     sim_obj.m2e_latency=args.m2e_latency
+    
+    #set correct channels    
+    sim_obj.playback_chans={'tx_voice':0}
+    sim_obj.rec_chans={'rx_voice':0}
         
     #------------------------------[Get test info]------------------------------
     
