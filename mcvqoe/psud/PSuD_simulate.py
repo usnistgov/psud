@@ -133,7 +133,7 @@ def simulate(channel_tech='clean',
     test_obj.info['PBI P_a1']=str(P_a1)
     test_obj.info['PBI P_a2']=str(P_a2)
     test_obj.info['PBI P_r'] =str(P_r)
-    test_obj.info['PBI interval']=str(pInterval)
+    test_obj.info['PBI interval']=str(p_interval)
     test_obj.info['test-ID'] = test_id
     
     test_obj.info['test_type'] = "simulation"
@@ -149,7 +149,7 @@ def simulate(channel_tech='clean',
     test_path = os.path.join(outdir,"data")
     
     print(f"Test complete. Data stored in {test_path}")
-    return(test_path)
+    return(test_name,prob)
 
 def main():
     #---------------------------[Create Test object]---------------------------
