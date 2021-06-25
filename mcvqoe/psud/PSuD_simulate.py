@@ -29,7 +29,7 @@ def simulate(channel_tech='clean',
              intell_est='trial',
              split_audio_dest=None,
              full_audio_dir=False,
-             testID=None):
+             test_id=None):
     """
     
 
@@ -134,7 +134,7 @@ def simulate(channel_tech='clean',
     test_obj.info['PBI P_a2']=str(P_a2)
     test_obj.info['PBI P_r'] =str(P_r)
     test_obj.info['PBI interval']=str(pInterval)
-    test_obj.info['test-ID'] = testID
+    test_obj.info['test-ID'] = test_id
     
     test_obj.info['test_type'] = "simulation"
     test_obj.info['tx_dev'] = "none"
