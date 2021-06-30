@@ -792,6 +792,10 @@ class measure:
                         
                 #append row to data
                 data.append(row)
+                
+        #set total number of trials, this gives better progress updates
+        #set total number of trials, this gives better progress updates
+        self.trials=len(data)
         
         #check if we should load audio
         if(load_audio):
