@@ -745,7 +745,7 @@ class measure:
                             row[k]=None
                         else:
                             #convert using function from data_fields
-                            self.data_fields[k](row[k])
+                            row[k]=self.data_fields[k](row[k])
                     except KeyError:
                         #not in data_fields, convert to float
                         row[k]=float(row[k]);
