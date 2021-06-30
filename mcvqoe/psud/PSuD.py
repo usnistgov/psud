@@ -33,7 +33,23 @@ def terminal_progress_update(prog_type,num_trials,current_trial,err_msg=""):
         
     #continue test
     return True
-     
+
+def chans_to_string(chans):
+    #channel string
+    return '('+(';'.join(chans))+')'
+
+
+def parse_audio_chans(csv_str):
+    '''
+    Function to parse audio channels from csv file
+    '''
+    match=re.search('\((?P<chans>[^)]+)\)',csv_str)
+
+    if(not match):
+        raise ValueError(f'Unable to parse chans {csv_str}, expected in the form "(chan1;chan2;...)"')
+
+    return tuple(match.group('chans').split(';'))
+
 class measure:
     """
     Class to run and reprocess Probability of Successful Delivery tests.
@@ -169,7 +185,7 @@ class measure:
     #on load conversion to datetime object fails for some reason
     #TODO : figure out how to fix this, string works for now but this should work too:
     #row[k]=datetime.datetime.strptime(row[k],'%d-%b-%Y_%H-%M-%S')
-    data_fields={"Timestamp":str,"Filename":str,"m2e_latency":float,"good_M2E":(lambda s: bool(strtobool(s))),"Over_runs":int,"Under_runs":int}
+    data_fields={"Timestamp":str,"Filename":str,"m2e_latency":float,"good_M2E":(lambda s: bool(strtobool(s))),"channels":parse_audio_chans,"Over_runs":int,"Under_runs":int}
     no_log=('y','clipi','data_dir','wav_data_dir','csv_data_dir','cutpoints','data_fields','time_expand_samples','num_keywords')
     
     def __init__(self,
@@ -426,6 +442,11 @@ class measure:
         #-----------------------[Check audio sample rate]-----------------------
         if(self.audio_interface.sample_rate != fs_abcmrt):
             raise ValueError(f'audio_interface sample rate is {self.audio_interface.sample_rate} Hz but only {fs_abcmrt} Hz is supported')
+        #------------------[Check for correct audio channels]------------------
+        if('tx_voice' not in self.audio_interface.playback_chans.keys()):
+            raise ValueError('self.audio_interface must be set up to play tx_voice')
+        if('rx_voice' not in self.audio_interface.rec_chans.keys()):
+            raise ValueError('self.audio_interface must be set up to record rx_voice')
         #---------------------------[Set time expand]---------------------------
         self.set_time_expand(self.time_expand)
         #---------------------[Load Audio Files if Needed]---------------------
@@ -531,7 +552,7 @@ class measure:
                 clip_name=os.path.join(wavdir,f'Rx{trial+1}_{clip_names[clip_index]}.wav')
                 
                 #play/record audio
-                self.audio_interface.play_record(self.y[clip_index],clip_name)
+                rec_chans=self.audio_interface.play_record(self.y[clip_index],clip_name)
                 
                 #un-push PTT
                 self.ri.ptt(False)
@@ -543,13 +564,18 @@ class measure:
                 
                 #check if we should process audio
                 if(self.intell_est=='trial'):
-                    trial_dat=self.process_audio(clip_index,clip_name)
+                    trial_dat=self.process_audio(clip_index,clip_name,rec_chans)
                 else:
                     #skip processing and give dummy values
                     success=np.empty(self.num_keywords)
                     success.fill(np.nan)
                     #return dummy values to fill in the .csv for now
-                    trial_dat={'m2e_latency':None,'intel':success,'good_M2E':False}
+                    trial_dat={
+                                'm2e_latency':None,
+                                'intel':success,
+                                'good_M2E':False,
+                                'channels':chans_to_string(rec_chans),
+                              }
 
                 #---------------------------[Write File]---------------------------
                 
@@ -593,7 +619,7 @@ class measure:
             
         return(base_filename)
         
-    def process_audio(self,clip_index,fname):
+    def process_audio(self,clip_index,fname,rec_chans):
         """
         estimate mouth to ear latency and intelligibility for an audio clip.
 
@@ -616,14 +642,23 @@ class measure:
         if(fs_abcmrt != fs):
             raise RuntimeError('Recorded sample rate does not match!')
         
-        rec_dat=mcvqoe.audio_float(rec_dat)
+        #check if we have more than one channel
+        if(rec_dat.ndim !=1 ):
+            #get the index of the voice channel
+            voice_idx=rec_chans.index('rx_voice')
+            #get voice channel
+            voice_dat=rec_dat[:,voice_idx]
+        else:
+            voice_dat=rec_dat
+
+        rec_dat=mcvqoe.audio_float(voice_dat)
         
         #------------------------[calculate M2E]------------------------
-        pos,dly = mcvqoe.ITS_delay_est(self.y[clip_index], rec_dat, "f", fs=fs_abcmrt,min_corr=self.m2e_min_corr)
+        pos,dly = mcvqoe.ITS_delay_est(self.y[clip_index], voice_dat, "f", fs=fs_abcmrt,min_corr=self.m2e_min_corr)
         
         if(not pos):
             #M2E estimation did not go super well, try again but restrict M2E bounds to keyword spacing
-            pos,dly = mcvqoe.ITS_delay_est(self.y[clip_index], rec_dat, "f", fs=fs_abcmrt,dlyBounds=(0,self.keyword_spacings[clip_index]))
+            pos,dly = mcvqoe.ITS_delay_est(self.y[clip_index], voice_dat, "f", fs=fs_abcmrt,dlyBounds=(0,self.keyword_spacings[clip_index]))
             
             good_m2e=False
         else:
@@ -640,14 +675,19 @@ class measure:
             bname=None
 
         success=self.compute_intelligibility(
-                                            rec_dat,
+                                            voice_dat,
                                             self.cutpoints[clip_index],
                                             dly,
                                             clip_base=bname
                                             )
 
             
-        return {'m2e_latency':estimated_m2e_latency,'intel':success,'good_M2E':good_m2e}
+        return {
+                    'm2e_latency':estimated_m2e_latency,
+                    'intel':success,
+                    'good_M2E':good_m2e,
+                    'channels':chans_to_string(rec_chans),
+                }
 
     def compute_intelligibility(self,audio,cutpoints,cp_shift,clip_base=None):
         """
@@ -842,7 +882,17 @@ class measure:
                 #create clip file name
                 clip_name='Rx'+str(n+1)+'_'+trial['Filename']+'.wav'
                 
-                new_dat=self.process_audio(clip_index,os.path.join(audio_path,clip_name))
+                try:
+                    #attempt to get channels from data
+                    rec_chans=trial['channels']
+                except KeyError:
+                    #fall back to only one channel
+                    rec_chans=('rx_voice')
+                new_dat=self.process_audio(
+                        clip_index,
+                        os.path.join(audio_path,clip_name),
+                        rec_chans
+                        )
                 
                 #overwrite new data with old and merge
                 merged_dat={**trial, **new_dat}
