@@ -11,11 +11,6 @@ import sys
 import os.path
 import datetime
      
-     
-#TODO : maybe we should put this in abcmrt?    
-#abcmrt only works with 48 kHz audio
-fs_abcmrt=48000
-     
 def terminal_progress_update(prog_type,num_trials,current_trial,err_msg=""):
     if(prog_type=='proc'):
         if(current_trial==0):
@@ -321,8 +316,8 @@ class measure:
             # load audio
             fs_file, audio_dat = scipy.io.wavfile.read(f_full)
             #check fs
-            if(fs_file != fs_abcmrt):
-                raise RuntimeError(f'Expected fs to be {fs_abcmrt} but got {fs_file} for {f}')
+            if(fs_file != abcmrt.fs):
+                raise RuntimeError(f'Expected fs to be {abcmrt.fs} but got {fs_file} for {f}')
             # Convert to float sound array and add to list
             self.y.append( mcvqoe.audio_float(audio_dat))
             #strip extension from file
@@ -350,7 +345,7 @@ class measure:
                     lens.append(ends[-1]-starts[-1])
             
             #word spacing is minimum distance converted to seconds
-            self.keyword_spacings.append(min(lens)/fs_abcmrt)
+            self.keyword_spacings.append(min(lens)/abcmrt.fs)
             
     def set_time_expand(self,t_ex):
         """
@@ -374,7 +369,7 @@ class measure:
 
         #convert to samples
         self.time_expand_samples=np.ceil(
-                self.time_expand_samples*fs_abcmrt
+                self.time_expand_samples*abcmrt.fs
                 ).astype(int)
         
     def audio_clip_check(self):
@@ -440,8 +435,8 @@ class measure:
 
         """
         #-----------------------[Check audio sample rate]-----------------------
-        if(self.audio_interface.sample_rate != fs_abcmrt):
-            raise ValueError(f'audio_interface sample rate is {self.audio_interface.sample_rate} Hz but only {fs_abcmrt} Hz is supported')
+        if(self.audio_interface.sample_rate != abcmrt.fs):
+            raise ValueError(f'audio_interface sample rate is {self.audio_interface.sample_rate} Hz but only {abcmrt.fs} Hz is supported')
         #------------------[Check for correct audio channels]------------------
         if('tx_voice' not in self.audio_interface.playback_chans.keys()):
             raise ValueError('self.audio_interface must be set up to play tx_voice')
@@ -639,7 +634,7 @@ class measure:
         
         #---------------------[Load in recorded audio]---------------------
         fs,rec_dat = scipy.io.wavfile.read(fname)
-        if(fs_abcmrt != fs):
+        if(abcmrt.fs != fs):
             raise RuntimeError('Recorded sample rate does not match!')
         
         #check if we have more than one channel
@@ -654,17 +649,17 @@ class measure:
         rec_dat=mcvqoe.audio_float(voice_dat)
         
         #------------------------[calculate M2E]------------------------
-        pos,dly = mcvqoe.ITS_delay_est(self.y[clip_index], voice_dat, "f", fs=fs_abcmrt,min_corr=self.m2e_min_corr)
+        pos,dly = mcvqoe.ITS_delay_est(self.y[clip_index], voice_dat, "f", fs=abcmrt.fs,min_corr=self.m2e_min_corr)
         
         if(not pos):
             #M2E estimation did not go super well, try again but restrict M2E bounds to keyword spacing
-            pos,dly = mcvqoe.ITS_delay_est(self.y[clip_index], voice_dat, "f", fs=fs_abcmrt,dlyBounds=(0,self.keyword_spacings[clip_index]))
+            pos,dly = mcvqoe.ITS_delay_est(self.y[clip_index], voice_dat, "f", fs=abcmrt.fs,dlyBounds=(0,self.keyword_spacings[clip_index]))
             
             good_m2e=False
         else:
             good_m2e=True
              
-        estimated_m2e_latency=dly / fs_abcmrt
+        estimated_m2e_latency=dly / abcmrt.fs
 
         #---------------------[Compute intelligibility]---------------------
         
@@ -732,7 +727,7 @@ class measure:
                 if(clip_base and isinstance(self.split_audio_dest, str)):
                     outname=os.path.join(self.split_audio_dest,f'{clip_base}_cp{cp_num}_w{cpw["Clip"]}.wav')
                     #write out audio
-                    scipy.io.wavfile.write(outname, int(fs_abcmrt), audio[start:end])
+                    scipy.io.wavfile.write(outname, int(abcmrt.fs), audio[start:end])
 
         #---------------------[Compute intelligibility]---------------------
         phi_hat,success=abcmrt.process(word_audio,word_num)
