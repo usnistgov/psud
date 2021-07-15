@@ -215,11 +215,13 @@ def main():
     parser.add_argument('--channel-rate', default=sim_obj.channel_rate, metavar='RATE',dest='channel_rate',
                         help='Channel technology rate to simulate. Passing \'None\' will use the technology default. (default: %(default)s)')
     parser.add_argument('--channel-m2e', type=float, default=sim_obj.m2e_latency, metavar='L',dest='m2e_latency',
-                        help='Channel mouth to ear latency, in seconds, to simulate. (default: %(default)s)')
+                        help='Channel mouth to ear latency, in seconds, to simulate. (default: %(default)s)')  
     parser.add_argument('--msg-eval',
-                        type = list,
-                        default = [1,5,10],
-                        help = "Message lengths to evalue PSuD at upon completion")      
+                        default = [],
+                        nargs = "+",
+                        action = "extend",
+                        type = float,
+                        help = "Message lengths to evalue PSuD at upon completion. Defaults to [1,3,5]")
     parser.add_argument('--intell-threshold',
                         type = float,
                         default = 0.5,
@@ -319,7 +321,12 @@ def main():
     print("----Intelligibility Success threshold = {}----".format(args.intell_threshold))
     print("Results shown as Psud(t) = mean, (95% C.I.)")
     
-    for msg_len in args.msg_eval:
+    if args.msg_eval == []:
+        msg_eval = [1,3,5]
+    else:
+        msg_eval = args.msg_eval
+    
+    for msg_len in msg_eval:
             psud_m,psud_ci = t_proc.eval_psud(args.intell_threshold,msg_len)
             
             if(args.use_probabilityiser):
