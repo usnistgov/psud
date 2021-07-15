@@ -1,4 +1,4 @@
-import mcvqoe
+import mcvqoe.base
 import abcmrt
 import scipy.io.wavfile
 import numpy as np
