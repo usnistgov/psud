@@ -13,9 +13,7 @@ import sys
 import numpy as np
 import pandas as pd
 
-# TODO: Update this when we have a class
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from PSuD_eval import evaluate
+from mcvqoe.psud import evaluate
 
 class EvaluateTest(unittest.TestCase):
     data_path = os.path.join('test_data','raw_data')
