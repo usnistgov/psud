@@ -1,6 +1,7 @@
 import mcvqoe.base
 import mcvqoe.delay
 import abcmrt
+import glob
 import scipy.io.wavfile
 import numpy as np
 import csv
@@ -258,6 +259,8 @@ class measure:
         self.split_audio_dest=split_audio_dest
         self.full_audio_dir=full_audio_dir
         self.progress_update=terminal_progress_update
+        self.save_tx_audio=True
+        self.save_audio=True
         
     def load_audio(self):
         """
@@ -506,7 +509,9 @@ class measure:
         #write out Tx clips and cutpoints to files
         for dat,name,cp in zip(self.y,clip_names,self.cutpoints):
             out_name=os.path.join(wavdir,f'Tx_{name}')
-            scipy.io.wavfile.write(out_name+'.wav', int(self.audio_interface.sample_rate), dat)
+            #check if saving audio, cutpoints are needed for processing
+            if(self.save_tx_audio and self.save_audio):
+                scipy.io.wavfile.write(out_name+'.wav', int(self.audio_interface.sample_rate), dat)
             mcvqoe.base.write_cp(out_name+'.csv',cp)
             
         #---------------------------[write log entry]---------------------------
@@ -575,7 +580,11 @@ class measure:
                                 'good_M2E':False,
                                 'channels':chans_to_string(rec_chans),
                               }
-
+                #check if we will need audio later
+                if(self.intell_est!='post'):
+                    #done with processing, delete file
+                    if(not self.save_audio):
+                        os.remove(clip_name)
                 #---------------------------[Write File]---------------------------
                 
                 trial_dat['Filename']   = clip_names[self.clipi[trial]]
@@ -599,6 +608,10 @@ class measure:
                 
                 #remove temp file
                 os.remove(temp_data_filename)
+                
+                #remove all audio files from wavdir
+                for name in glob.iglob(os.path.join(wavdir,'*.wav')):
+                    os.remove(name)
             else:
                 #move temp file to real file
                 shutil.move(temp_data_filename,self.data_filename)
