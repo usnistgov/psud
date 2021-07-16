@@ -115,7 +115,8 @@ def simulate(channel_tech='clean',
                  get_post_notes = lambda : mcvqoe.gui.post_test(error_only=True),#only get test notes on error
                  intell_est=intell_est,
                  split_audio_dest=split_audio_dest,
-                 full_audio_dir=full_audio_dir)
+                 full_audio_dir=full_audio_dir,
+                 save_audio=False)
 
     #-------------------------------[Probabilityiser]-------------------------
     prob=mcvqoe.simulation.PBI()

@@ -203,7 +203,9 @@ class measure:
                  get_post_notes = None,
                  intell_est='trial',
                  split_audio_dest=None,
-                 full_audio_dir=False):
+                 full_audio_dir=False,
+                 save_tx_audio = True,
+                 save_audio = True):
         """
         create a new PSuD object.
         
@@ -239,6 +241,10 @@ class measure:
             path where individually cut word clips are stored
         full_audio_dir : bool, default=False
             read, and use, .wav files in audio_path, ignore audio_files and trials
+        save_tx_audio : bool, default=True
+            Save transmitted audio in output directory. Overridden by save_audio
+        save_audio : bool, default=True
+            Save transmitted and received audio
         """
                  
         self.rng=np.random.default_rng()
@@ -259,8 +265,8 @@ class measure:
         self.split_audio_dest=split_audio_dest
         self.full_audio_dir=full_audio_dir
         self.progress_update=terminal_progress_update
-        self.save_tx_audio=True
-        self.save_audio=True
+        self.save_tx_audio=save_tx_audio
+        self.save_audio=save_audio
         
     def load_audio(self):
         """
