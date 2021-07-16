@@ -11,10 +11,6 @@ import tempfile
 
 from .PSuD import measure
 from .PSuD_eval import evaluate
-
-#main function 
-if __name__ == "__main__":
-    main()
     
 def main():
     #---------------------------[Create Test object]---------------------------
@@ -101,3 +97,7 @@ def main():
                                     psud_ci[0],
                                     psud_ci[1])
                 print(results)
+
+#main function 
+if __name__ == "__main__":
+    main()

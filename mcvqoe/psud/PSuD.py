@@ -1,4 +1,5 @@
-import mcvqoe
+import mcvqoe.base
+import mcvqoe.delay
 import abcmrt
 import scipy.io.wavfile
 import numpy as np
@@ -322,13 +323,13 @@ class measure:
             if(fs_file != abcmrt.fs):
                 raise RuntimeError(f'Expected fs to be {abcmrt.fs} but got {fs_file} for {f}')
             # Convert to float sound array and add to list
-            self.y.append( mcvqoe.audio_float(audio_dat))
+            self.y.append( mcvqoe.base.audio_float(audio_dat))
             #strip extension from file
             fne,_=os.path.splitext(f_full)
             #add .csv extension
             fcsv=fne+'.csv'
             #load cutpoints
-            cp=mcvqoe.load_cp(fcsv)
+            cp=mcvqoe.base.load_cp(fcsv)
             #add cutpoints to array
             self.cutpoints.append(cp)
             
@@ -470,7 +471,7 @@ class measure:
         #add abcmrt version
         self.info['abcmrt version']=abcmrt.version
         #fill in standard stuff
-        self.info.update(mcvqoe.write_log.fill_log(self))
+        self.info.update(mcvqoe.base.write_log.fill_log(self))
         #-----------------------[Setup Files and folders]-----------------------
         
         #generate data dir names
@@ -506,11 +507,11 @@ class measure:
         for dat,name,cp in zip(self.y,clip_names,self.cutpoints):
             out_name=os.path.join(wavdir,f'Tx_{name}')
             scipy.io.wavfile.write(out_name+'.wav', int(self.audio_interface.sample_rate), dat)
-            mcvqoe.write_cp(out_name+'.csv',cp)
+            mcvqoe.base.write_cp(out_name+'.csv',cp)
             
         #---------------------------[write log entry]---------------------------
         
-        mcvqoe.write_log.pre(info=self.info, outdir=self.outdir)
+        mcvqoe.base.write_log.pre(info=self.info, outdir=self.outdir)
         
         #---------------[Try block so we write notes at the end]---------------
         
@@ -613,7 +614,7 @@ class measure:
             else:
                 info={}
             #finish log entry
-            mcvqoe.post(outdir=self.outdir,info=info)
+            mcvqoe.base.post(outdir=self.outdir,info=info)
             
         return(base_filename)
         
@@ -649,14 +650,14 @@ class measure:
         else:
             voice_dat=rec_dat
 
-        rec_dat=mcvqoe.audio_float(voice_dat)
+        rec_dat=mcvqoe.base.audio_float(voice_dat)
         
         #------------------------[calculate M2E]------------------------
-        pos,dly = mcvqoe.ITS_delay_est(self.y[clip_index], voice_dat, "f", fs=abcmrt.fs,min_corr=self.m2e_min_corr)
+        pos,dly = mcvqoe.delay.ITS_delay_est(self.y[clip_index], voice_dat, "f", fs=abcmrt.fs,min_corr=self.m2e_min_corr)
         
         if(not pos):
             #M2E estimation did not go super well, try again but restrict M2E bounds to keyword spacing
-            pos,dly = mcvqoe.ITS_delay_est(self.y[clip_index], voice_dat, "f", fs=abcmrt.fs,dlyBounds=(0,self.keyword_spacings[clip_index]))
+            pos,dly = mcvqoe.delay.ITS_delay_est(self.y[clip_index], voice_dat, "f", fs=abcmrt.fs,dlyBounds=(0,self.keyword_spacings[clip_index]))
             
             good_m2e=False
         else:
