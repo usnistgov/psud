@@ -5,14 +5,17 @@ Created on Thu Jan  7 08:37:32 2021
 
 @author: jkp4
 """
-import numpy as np
-import pandas as pd
 import os
 import warnings
 import pdb
+import argparse
+
+import numpy as np
+import pandas as pd
+
 import mcvqoe.math
 import mcvqoe.simulation
-import argparse
+
 
 class evaluate():
 
@@ -106,8 +109,7 @@ class evaluate():
                  test_names,
                  test_path='',
                  wav_dirs=[],
-                 fs=48e3,
-                 use_reprocess=True):
+                 **kwargs):
         if(isinstance(test_names, str)):
             test_names = [test_names]
             if(isinstance(wav_dirs, str)):
@@ -161,21 +163,22 @@ class evaluate():
             # append name to list of names
             self.test_names.append(t_name)
 
-        self.fs = fs
-
         # TODO: Add audio length - store max we've seen,
         self.max_audio_length = None
-
-        # Check if you reprocessed data should be used
-        self.use_reprocess = use_reprocess
-
-        self.test_dat, self.cps = self.load_sessions()
-
-        # TODO:
 
         # Initialize empty dictionary to store test_chains in, keys will be
         # threshold values
         self.test_chains = dict()
+
+        self.fs = 48e3
+        self.use_reprocess = True
+        for k, v in kwargs.items():
+            if hasattr(self, k):
+                setattr(k, v)
+            else:
+                raise TypeError(f"{k} is not a valid keyword argument")
+
+        self.test_dat, self.cps = self.load_sessions()
 
     def load_session(self, test_name):
         """
