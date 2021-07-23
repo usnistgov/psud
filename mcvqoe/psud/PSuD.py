@@ -161,18 +161,20 @@ class measure:
     --------
     example of running a test with simulated devices.
 
-    >>>from PSuD_1way_1loc import PSuD
-    >>>import mcvqoe.simulation
-    >>>sim_obj=mcvqoe.simulation.QoEsim()
-    >>>test_obj=PSuD(ri=sim_obj,audio_interface=sim_obj,trials=10,
-    ...     audio_path='path/to/audio/',
-    ...     audio_files=('F1_PSuD_Norm_10.wav','F3_PSuD_Norm_10.wav',
-    ...         'M3_PSuD_Norm_10.wav','M4_PSuD_Norm_10.wav'
-    ...         )
-    ... )
-    >>>test_obj.run()
+    >>> import mcvqoe.simulation
+    >>> sim_obj=mcvqoe.simulation.QoEsim()
+    >>> test_obj=mcvqoe.psud.measure(ri=sim_obj,audio_interface=sim_obj,
+    ...                              trials=10,audio_path='path/to/audio/',
+    ...                              audio_files=('F1_PSuD_Norm_10.wav',
+    ...                                           'F3_PSuD_Norm_10.wav',
+    ...                                           'M3_PSuD_Norm_10.wav',
+    ...                                           'M4_PSuD_Norm_10.wav'
+    ...                                          )
+    ...                             )
+    >>> test_obj.run()
     
     Example of reprocessing  a test file, 'test.csv', to get 'rproc.csv'
+    # TODO: Fix this example!
     
     >>>from PSuD_1way_1loc import PSuD
     >>>test_obj=PSuD()

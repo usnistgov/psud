@@ -14,68 +14,101 @@ import mcvqoe.math
 import mcvqoe.simulation
 import argparse
 
+
 class evaluate():
-    
+
     """
-    Class to evaluate Probability of Successful Delivery tests
-       
+    Class to evaluate Probability of Successful Delivery tests.
+
+    Class to evaluate PSuD tests. Processes either one or a group of tests.
+    When passed a list of test files all the data is aggregated and PSuD is
+    determined from the results from all tests.
+
+    Parameters
+    ----------
+    test_names : str or list
+        Name of test, or list of names of tests.
+
+    test_path : str
+        Path where test data is stored. Does not need to be passed if
+        test_names contains full paths to files and wav_dirs is set as
+        well.
+
+    wav_dirs : str or list
+        Paths to directories containing audio for a PSuD test. Must contain
+        cutpoints for audio clips in data files.
+
+    fs : int
+        Sample rate for audio. Default is 48e3 Hz.
+
+    use_reprocess : bool
+        Use reprocessed data rather than original data if it exists for this
+        test. Default is True.
+
     Attributes
     ----------
     test_names : list
         Test file names to evaluate.
-    
+
     test_info : dict
         Dict with data_path, data_file, and cp_path fields.
-        
+
     fs : int
         Sample rate for audio
-        
+
     test_dat : pd.DataFrame
         Data from all sessions
-        
+
     cps : Dict
         Dict of each test, with cutpoints for each clip for each test.
-        
+
     test_chains : np.array
         List of longest chain of successful words for each trial of a test
-        
-        
+
     max_audio_length : XXX
         Descr.
-        
+
     Methods
     -------
-    
+
     eval_psud()
         Determine the probability of successful delivery of a message
-    
+
+    See Also
+    --------
+    mcvqoe.psud.measure : Measurement class for generating PSuD data.
+
+    Examples
+    --------
+
+    Run a simulation and evaluate EWC PSuD for an intelligibility threshold of
+    0.5 and a message of length 3.
+
+    >>> import mcvqoe.simulation
+    >>> sim_obj=mcvqoe.simulation.QoEsim()
+    >>> test_obj=mcvqoe.psud.measure(ri=sim_obj,audio_interface=sim_obj,
+    ...                              trials=10,audio_path='path/to/audio/',
+    ...                              audio_files=('F1_PSuD_Norm_10.wav',
+    ...                                           'F3_PSuD_Norm_10.wav',
+    ...                                           'M3_PSuD_Norm_10.wav',
+    ...                                           'M4_PSuD_Norm_10.wav'
+    ...                                          )
+    ...                             )
+    >>> fname = test_obj.run()
+    >>> psud_proc = mcvqoe.psud.evaluate(fname)
+    >>> ewc_psud = psud_proc.eval_psud(0.5,3)
+
+    Using same evaluation object evaluate AMI PSuD for an intelligibility
+    threshold of 0.7 and a message of length 10
+    >>> ami_psud = psud_proc.eval_psud(0.7,10)
     """
-    
-    def __init__(self,test_names, test_path='',wav_dirs=[],fs = 48e3,use_reprocess = True):
-        """
-        Initialize PSuD_eval object.
 
-        Parameters
-        ----------
-        test_names : str or list
-            Name of test, or list of names of tests.
-        
-        test_path : str
-            Path where test data is stored. Does not need to be passed if 
-            test_names contains full paths to files and wav_dirs is set as well.
-            
-        wav_dirs : str or list
-            Paths to directories containing audio for a PSuD test. Must contain 
-            cutpoints for audio clips in data files.
-            
-        fs : int
-            Sample rate for audio. Default is 48e3 Hz
-
-        Returns
-        -------
-        None.
-
-        """
+    def __init__(self,
+                 test_names,
+                 test_path='',
+                 wav_dirs=[],
+                 fs=48e3,
+                 use_reprocess=True):
         if(isinstance(test_names,str)):
             test_names = [test_names]
             if(isinstance(wav_dirs,str)):
