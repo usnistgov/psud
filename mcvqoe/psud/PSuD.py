@@ -173,24 +173,7 @@ class measure:
     data_fields={"Timestamp":str,"Filename":str,"m2e_latency":float,"good_M2E":(lambda s: bool(strtobool(s))),"channels":parse_audio_chans,"Over_runs":int,"Under_runs":int}
     no_log=('y','clipi','data_dir','wav_data_dir','csv_data_dir','cutpoints','data_fields','time_expand_samples','num_keywords')
     
-    def __init__(self,
-                 audio_files=[],
-                 audio_path = '',
-                 trials = 100,
-                 outdir='',
-                 ri=None,
-                 info={'Test Type':'default','Pre Test Notes':None},
-                 ptt_wait=0.68,
-                 ptt_gap=3.1,
-                 audio_interface=None,
-                 time_expand = [100e-3 - 0.11e-3, 0.11e-3],
-                 m2e_min_corr = 0.76,
-                 get_post_notes = None,
-                 intell_est='trial',
-                 split_audio_dest=None,
-                 full_audio_dir=False,
-                 save_tx_audio = True,
-                 save_audio = True):
+    def __init__(self, **kwargs):
         """
         create a new PSuD object.
         
@@ -234,24 +217,30 @@ class measure:
                  
         self.rng=np.random.default_rng()
         #set default values
-        self.audio_files=audio_files
-        self.audio_path=audio_path
-        self.trials=trials
-        self.outdir=outdir
-        self.ri=ri
-        self.info=info
-        self.ptt_wait=ptt_wait
-        self.ptt_gap=ptt_gap
-        self.audio_interface=audio_interface
-        self.time_expand=time_expand
-        self.m2e_min_corr=m2e_min_corr
-        self.get_post_notes=get_post_notes
-        self.intell_est=intell_est
-        self.split_audio_dest=split_audio_dest
-        self.full_audio_dir=full_audio_dir
-        self.progress_update=terminal_progress_update
-        self.save_tx_audio=save_tx_audio
-        self.save_audio=save_audio
+        self.audio_files = []
+        self.audio_path = ''
+        self.trials = 100
+        self.outdir = ''
+        self.ri = None
+        self.info = {'Test Type':'default','Pre Test Notes':''}
+        self.ptt_wait = 0.68
+        self.ptt_gap = 3.1
+        self.audio_interface = None
+        self.time_expand = [100e-3 - 0.11e-3, 0.11e-3]
+        self.m2e_min_corr = 0.76
+        self.get_post_notes = None
+        self.intell_est = 'trial'
+        self.split_audio_dest = None
+        self.full_audio_dir = False
+        self.progress_update = terminal_progress_update
+        self.save_tx_audio = False
+        self.save_audio = False
+
+        for k, v in kwargs.items():
+            if hasattr(self, k):
+                setattr(self, k, v)
+            else:
+                raise TypeError(f"{k} is not a valid keyword argument")
         
     def load_audio(self):
         """
