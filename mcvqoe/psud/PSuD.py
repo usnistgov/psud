@@ -883,7 +883,7 @@ class measure:
                     rec_chans=trial['channels']
                 except KeyError:
                     #fall back to only one channel
-                    rec_chans=('rx_voice')
+                    rec_chans=('rx_voice',)
                 new_dat=self.process_audio(
                         clip_index,
                         os.path.join(audio_path,clip_name),
