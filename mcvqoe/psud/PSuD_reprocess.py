@@ -89,7 +89,7 @@ def main():
         print("Results shown as Psud(t) = mean, (95% C.I.)")
         
         for msg_len in args.msg_eval:
-                psud_m,psud_ci = t_proc.eval_psud(args.intell_threshold,msg_len)
+                psud_m,psud_ci = t_proc.eval(args.intell_threshold,msg_len)
             
                 results_str = "PSuD({}) = {:.4f}, ({:.4f},{:.4f})"
                 results = results_str.format(msg_len,

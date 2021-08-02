@@ -70,7 +70,7 @@ class EvaluateTest(unittest.TestCase):
         tech_ref = ref_data[ref_data['Method'] == method]
         for thresh in cls.intelligibility_thresholds:
             for mlen in cls.message_lengths:
-                psud,psud_ci = cls.proc_tests[tech_name].eval_psud(thresh,
+                psud,psud_ci = cls.proc_tests[tech_name].eval(thresh,
                                                                     mlen,
                                                                     method = method)
                 tdat = tech_ref[(tech_ref['Threshold'] == thresh) & (tech_ref['Length'] == mlen)]
@@ -88,7 +88,7 @@ class EvaluateTest(unittest.TestCase):
         tech_ref = ref_data[ref_data['Method'] == method]
         for thresh in cls.intelligibility_thresholds:
             for mlen in cls.message_lengths:
-                psud,psud_ci = cls.proc_tests[tech_name].eval_psud(thresh,
+                psud,psud_ci = cls.proc_tests[tech_name].eval(thresh,
                                                                     mlen,
                                                                     method = method,
                                                                     method_weight = mweight)

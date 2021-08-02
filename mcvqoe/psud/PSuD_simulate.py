@@ -341,7 +341,7 @@ def main():
         msg_eval = args.msg_eval
     
     for msg_len in msg_eval:
-            psud_m,psud_ci = t_proc.eval_psud(args.intell_threshold,msg_len)
+            psud_m,psud_ci = t_proc.eval(args.intell_threshold,msg_len)
             
             if(args.use_probabilityiser):
                 e_psud = prob.expected_psud(msg_len)

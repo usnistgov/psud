@@ -73,7 +73,7 @@ class evaluate():
     Methods
     -------
 
-    eval_psud()
+    eval()
         Determine the probability of successful delivery of a message
 
     See Also
@@ -98,11 +98,11 @@ class evaluate():
     ...                             )
     >>> fname = test_obj.run()
     >>> psud_proc = mcvqoe.psud.evaluate(fname)
-    >>> ewc_psud = psud_proc.eval_psud(0.5,3)
+    >>> ewc_psud = psud_proc.eval(0.5,3)
 
     Using same evaluation object evaluate AMI PSuD for an intelligibility
     threshold of 0.7 and a message of length 10
-    >>> ami_psud = psud_proc.eval_psud(0.7,10)
+    >>> ami_psud = psud_proc.eval(0.7,10)
     """
 
     def __init__(self,
@@ -547,13 +547,13 @@ class evaluate():
             fint.loc[ix] = ftrial
         return(fint)
 
-    def eval_psud(self,
-                  threshold,
-                  msg_len,
-                  p=0.95,
-                  R=1e4,
-                  method='EWC',
-                  method_weight=None):
+    def eval(self,
+             threshold,
+             msg_len,
+             p=0.95,
+             R=1e4,
+             method='EWC',
+             method_weight=None):
         """
         Determine the probability of successful delivery of a message
 
@@ -707,7 +707,7 @@ def main():
         print("Results shown as Psud(t) = mean, (95% C.I.)")
         msg_str = "PSuD({}) = {:.4f}, ({:.4f},{:.4f})"
         for message_len in args.message_length:
-            psud_m, psud_ci = t_proc.eval_psud(threshold,
+            psud_m, psud_ci = t_proc.eval(threshold,
                                                message_len,
                                                method=args.method,
                                                method_weight=args.method_weight)

@@ -40,7 +40,7 @@ def sweep(t_proc):
             print('Method: {}, Threshold: {}'.format(method,t))
             if(method == "EWC" or method == "AMI"):
                 for mlen in lengths:
-                    psud_m,psud_ci = t_proc.eval_psud(t,
+                    psud_m,psud_ci = t_proc.eval(t,
                                                       mlen,
                                                       method = method)
                     results.loc[ix] = [method, np.nan, t, mlen, psud_m, psud_ci[0], psud_ci[1]]
@@ -48,7 +48,7 @@ def sweep(t_proc):
             else:
                 for w in weights:
                     for mlen in lengths:
-                        psud_m,psud_ci = t_proc.eval_psud(t,
+                        psud_m,psud_ci = t_proc.eval(t,
                                                       mlen,
                                                       method = method,
                                                       method_weight = w)
