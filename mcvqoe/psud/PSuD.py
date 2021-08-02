@@ -126,7 +126,11 @@ class measure:
         takes three arguments, progress type, total number of trials, current
         trial number. The first argument, progress type is a string that will be
         one of {'test','proc'} to indicate that the test is running trials or
-        processing data. 
+        processing data.
+    save_tx_audio : bool, default=True
+        Save transmitted audio in output directory. Overridden by save_audio
+    save_audio : bool, default=True
+        Save transmitted and received audio
 
     Methods
     -------
@@ -176,43 +180,7 @@ class measure:
     def __init__(self, **kwargs):
         """
         create a new PSuD object.
-        
-        Parameters
-        ----------
-        audio_files : list, default=[]
-            List of names of audio files. relative paths are relative to audio_path
-        audio_path : string, default=''
-            Path where audio is stored
-        trials : trials, default=100
-            Number of times audio will be run through the system in the run method
-        outdir : str, default=''
-            Base directory where data is stored.
-        ri : mcvqoe.RadioInterface, default=None
-            Object to use to key the audio channel
-        info : dict, default={'Test Type':'default','Pre Test Notes':None}
-            Dictionary with test info to for the log entry
-        ptt_wait : float, default=0.68
-            Time to wait, in seconds, between keying the channel and playing audio
-        ptt_gap : float, default=3.1
-            Time to pause, in seconds, between one trial and the next
-        audio_interface : mcvqoe.AudioPlayer ,default=None
-            interface to use to play and record audio on the communication channel
-        time_expand : 1 or 2 element array, default=[100e-3 - 0.11e-3, 0.11e-3]
-            time to dilate cutpoints by
-        m2e_min_corr : float, default=0.76
-            minimum correlation to accept for a good mouth to ear measurement.
-        get_post_notes : function, default=None
-            Function to call to get notes at the end of the test.
-        intell_est : {'trial','post','none'}, default='trial'
-            Control when intelligibility and mouth to ear estimations are done.
-        split_audio_dest : string, default=None
-            path where individually cut word clips are stored
-        full_audio_dir : bool, default=False
-            read, and use, .wav files in audio_path, ignore audio_files and trials
-        save_tx_audio : bool, default=True
-            Save transmitted audio in output directory. Overridden by save_audio
-        save_audio : bool, default=True
-            Save transmitted and received audio
+
         """
                  
         self.rng=np.random.default_rng()
@@ -233,8 +201,8 @@ class measure:
         self.split_audio_dest = None
         self.full_audio_dir = False
         self.progress_update = terminal_progress_update
-        self.save_tx_audio = False
-        self.save_audio = False
+        self.save_tx_audio = True
+        self.save_audio = True
 
         for k, v in kwargs.items():
             if hasattr(self, k):
@@ -487,6 +455,7 @@ class measure:
         temp_data_filename = os.path.join(csv_data_dir,f'{base_filename}_TEMP.csv')
 
         #write out Tx clips and cutpoints to files
+        #cutpoints are always written, they are needed for eval
         for dat,name,cp in zip(self.y,clip_names,self.cutpoints):
             out_name=os.path.join(wavdir,f'Tx_{name}')
             #check if saving audio, cutpoints are needed for processing
