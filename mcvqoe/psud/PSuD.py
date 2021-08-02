@@ -233,8 +233,8 @@ class measure:
         self.split_audio_dest = None
         self.full_audio_dir = False
         self.progress_update = terminal_progress_update
-        self.save_tx_audio = False
-        self.save_audio = False
+        self.save_tx_audio = True
+        self.save_audio = True
 
         for k, v in kwargs.items():
             if hasattr(self, k):
@@ -487,6 +487,7 @@ class measure:
         temp_data_filename = os.path.join(csv_data_dir,f'{base_filename}_TEMP.csv')
 
         #write out Tx clips and cutpoints to files
+        #cutpoints are always written, they are needed for eval
         for dat,name,cp in zip(self.y,clip_names,self.cutpoints):
             out_name=os.path.join(wavdir,f'Tx_{name}')
             #check if saving audio, cutpoints are needed for processing
