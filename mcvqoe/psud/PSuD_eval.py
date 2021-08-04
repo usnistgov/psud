@@ -18,7 +18,6 @@ import mcvqoe.simulation
 
 
 class evaluate():
-
     """
     Class to evaluate Probability of Successful Delivery tests.
 
@@ -72,7 +71,6 @@ class evaluate():
 
     Methods
     -------
-
     eval()
         Determine the probability of successful delivery of a message
 
@@ -82,7 +80,6 @@ class evaluate():
 
     Examples
     --------
-
     Run a simulation and evaluate EWC PSuD for an intelligibility threshold of
     0.5 and a message of length 3.
 
@@ -110,12 +107,12 @@ class evaluate():
                  test_path='',
                  wav_dirs=[],
                  **kwargs):
-        if(isinstance(test_names, str)):
+        if isinstance(test_names, str):
             test_names = [test_names]
-            if(isinstance(wav_dirs, str)):
+            if isinstance(wav_dirs, str):
                 wav_dirs = [wav_dirs]
 
-        if(not wav_dirs):
+        if not wav_dirs:
             wav_dirs = (None, ) * len(test_names)
 
         # initialize info arrays
@@ -133,7 +130,7 @@ class evaluate():
             t_name, ext = os.path.splitext(name)
 
             # check if a path was given to a .csv file
-            if(not dat_path and not ext == '.csv'):
+            if not dat_path and not ext == '.csv':
                 # generate using test_path
                 dat_path = os.path.join(test_path, 'csv')
                 dat_file = os.path.join(dat_path, t_name+'.csv')
@@ -143,7 +140,7 @@ class evaluate():
                 dat_file = tn
 
             # check if we were given an explicit wav directory
-            if(wd):
+            if wd:
                 # use given path
                 cp_path = wd
                 # get test name from wave path
@@ -182,7 +179,7 @@ class evaluate():
 
     def load_session(self, test_name):
         """
-        Load a PSuD data session
+        Load a PSuD data session.
 
         Parameters
         ----------
@@ -198,10 +195,9 @@ class evaluate():
             Dictionary with cutpoints for each clip
 
         """
-
         fname = self.test_info[test_name]['data_file']
 
-        if(self.use_reprocess):
+        if self.use_reprocess:
             # Look for reprocessed file if it exists
             fname = self.check_reprocess(fname)
 
@@ -214,11 +210,11 @@ class evaluate():
             fpath = os.path.join(self.test_info[test_name]['cp_path'],
                                  "Tx_{}.csv".format(clip))
             test_cp[clip] = pd.read_csv(fpath)
-        return((test, test_cp))
+        return (test, test_cp)
 
     def load_sessions(self):
         """
-        Load and consolidate multiple PSuD Data Sessions for a given Test
+        Load and consolidate multiple PSuD Data Sessions for a given Test.
 
         Returns
         -------
@@ -243,11 +239,11 @@ class evaluate():
         # Ensure that tests has unique row index
         nrow, _ = tests.shape
         tests.index = np.arange(nrow)
-        return((tests, tests_cp))
+        return (tests, tests_cp)
 
     def check_reprocess(self, fname):
         """
-        Look for a reprocessed data file in same path as fname
+        Look for a reprocessed data file in same path as fname.
 
         Searches for a reprocessed data file in same path as fname.
         Reprocessed data always starts as 'Rcapture', where original data
@@ -266,20 +262,20 @@ class evaluate():
 
         """
         dat_path, name = os.path.split(fname)
-        if('Rcapture' not in name):
+        if 'Rcapture' not in name:
             reprocess_fname = os.path.join(dat_path, 'R{}'.format(name))
-            if(os.path.exists(reprocess_fname)):
+            if os.path.exists(reprocess_fname):
                 out_name = reprocess_fname
             else:
                 out_name = fname
         else:
             out_name = fname
 
-        return(out_name)
+        return out_name
 
     def get_clip_names(self, test_dat):
         """
-        Extract audio clip names from a session
+        Extract audio clip names from a session.
 
         Parameters
         ----------
@@ -295,11 +291,11 @@ class evaluate():
         # Function to extract clip names from a session
 
         clip_names = np.unique(test_dat['Filename'])
-        return(clip_names)
+        return clip_names
 
     def get_test_chains(self, method, threshold, method_weight=None):
         """
-        Determine longest successful chain of words for each trial of a test
+        Determine longest successful chain of words for each trial of a test.
 
         Parameters
         ----------
@@ -328,23 +324,23 @@ class evaluate():
         chains = []
         times = []
 
-        if(method == "ARF"):
+        if method == "ARF":
             method_intell = self.ARF_intelligibility(
                 self.test_dat.filter(regex=r"W\d+_Int"),
                 weight=method_weight)
-        elif(method == "AMI"):
-            if(method_weight is not None):
+        elif method == "AMI":
+            if method_weight is not None:
                 warnings.warn("Method weight passed to AMI, will not be used")
             method_intell = self.AMI_intelligibility(
                 self.test_dat.filter(regex=r"W\d+_Int"))
-        elif(method == "EWC"):
-            if(method_weight is not None):
+        elif method == "EWC":
+            if method_weight is not None:
                 warnings.warn("Method weight passed to EWC, will not be used")
             method_intell = self.test_dat.filter(regex=r"W\d+_Int")
         else:
             raise ValueError('Invalid method passed: {}'.format(method))
 
-        if(method == "AMI"):
+        if method == "AMI":
             # Test chains don't matter for AMI
             np_chains = method_intell
         else:
@@ -359,17 +355,17 @@ class evaluate():
                 chain_time = self.chain2time(clip_cp, chain_len)
                 times.append(chain_time)
             np_chains = np.array(chains)
-        if(method in self.test_chains):
+        if method in self.test_chains:
             self.test_chains[method][threshold] = np_chains
         else:
             self.test_chains[method] = {threshold: np_chains}
 
         # self.test_chains[threshold] = np_chains
-        return(np_chains)
+        return np_chains
 
     def get_trial_chain_length(self, trial, threshold):
         """
-        Determine number of successfully deliverd words in a trial
+        Determine number of successfully deliverd words in a trial.
 
         Parameters
         ----------
@@ -386,17 +382,16 @@ class evaluate():
             threshold
 
         """
-
         failures = np.where(~(trial >= threshold))
-        if(failures[0].size == 0):
+        if failures[0].size == 0:
             chain_len = len(trial)
         else:
             chain_len = failures[0][0]
-        return(chain_len)
+        return chain_len
 
     def chain2time(self, clip_cp, chain_length):
         """
-        Convert word chain length to length in seconds
+        Convert word chain length to length in seconds.
 
         Parameters
         ----------
@@ -413,8 +408,8 @@ class evaluate():
             audio clip before intelligibility threshold was not achieved.
 
         """
-        if(chain_length == 0):
-            return(0)
+        if chain_length == 0:
+            return 0
 
         # Get indices for mrt keywords
         key_ix = np.where(~np.isnan(clip_cp['Clip']))[0]
@@ -424,9 +419,9 @@ class evaluate():
         success_ix = chain_ix
         silence_flag = True
 
-        while(silence_flag):
-            if(success_ix < (len(clip_cp)-1)):
-                if(np.isnan(clip_cp.loc[success_ix+1, 'Clip'])):
+        while silence_flag:
+            if success_ix < (len(clip_cp)-1):
+                if np.isnan(clip_cp.loc[success_ix+1, 'Clip']):
                     # If next word is silence, increment success index
                     # Note: we deem silence to be assumed to still be success
                     success_ix += 1
@@ -440,7 +435,7 @@ class evaluate():
         # chain time: increment end sample by 1 to make numbers round better
         chain_time = (clip_cp.loc[success_ix, 'End']+1)/self.fs
 
-        return(chain_time)
+        return chain_time
 
     def ARF_intelligibility(self, int_data, weight=0.5):
         """
@@ -469,7 +464,6 @@ class evaluate():
             Filtered intelligibility results.
 
         """
-
         # # Get number ofrows in data
         # nrow,_ = int_data.shape
         # # Ensure that int_data has unique row names
@@ -482,7 +476,7 @@ class evaluate():
             # initialize array to store filtered trial data in
             ftrial = np.empty(len(trial))
             for wix, wint in enumerate(trial):
-                if(wix == 0):
+                if wix == 0:
                     # For first word, intelligibility is just first word
                     # intelligibility
                     ftrial[wix] = trial[wix]
@@ -491,7 +485,7 @@ class evaluate():
 
             # Store new trial intelligibility
             fint.loc[ix] = ftrial
-        return(fint)
+        return fint
 
     def AMI_intelligibility(self, int_data):
         """
@@ -512,7 +506,6 @@ class evaluate():
             Smoothed intelligibility results.
 
         """
-
         # Initialize new data frame
         fint = pd.DataFrame(columns=int_data.columns)
         for ix, trial in int_data.iterrows():
@@ -523,7 +516,7 @@ class evaluate():
                 ftrial[wix] = np.mean(trial[:(wix+1)])
             # Store new trial intelligibility
             fint.loc[ix] = ftrial
-        return(fint)
+        return fint
 
     def eval(self,
              threshold,
@@ -533,7 +526,7 @@ class evaluate():
              method='EWC',
              method_weight=None):
         """
-        Determine the probability of successful delivery of a message
+        Determine the probability of successful delivery of a message.
 
         Probability of successful delivery measures the probability of
         successfully delivering a message of length msg_len. A message is
@@ -582,21 +575,21 @@ class evaluate():
 
         # Calculate test chains for this threshold, if we don't already have
         # them
-        if(method not in self.test_chains):
+        if method not in self.test_chains:
             self.get_test_chains(method,
                                  threshold,
                                  method_weight=method_weight)
-        elif(threshold not in self.test_chains[method]):
+        elif threshold not in self.test_chains[method]:
             self.get_test_chains(method,
                                  threshold,
                                  method_weight=method_weight)
-        # if(threshold not in self.test_chains):
+        # if threshold not in self.test_chains:
         #     self.get_test_chains(threshold)
 
         # Get relevant test chains
         test_chains = self.test_chains[method][threshold]
 
-        if(method == "AMI"):
+        if method == "AMI":
             msg_success = []
             for ix, trial in test_chains.iterrows():
                 check_ix = np.floor(msg_len - 1).astype(int)
@@ -609,8 +602,8 @@ class evaluate():
         # Calculate fraction of tests that match msg_len requirement
         psud = np.mean(msg_success)
 
-        if(len(msg_success) > 1):
-            if(len(msg_success) < 30):
+        if len(msg_success) > 1:
+            if len(msg_success) < 30:
                 warnings.warn(("Number of samples is small."
                                "Reported confidence intervals may not be"
                                "useful."))
@@ -619,13 +612,29 @@ class evaluate():
         else:
             ci = np.array([-np.inf, np.inf])
 
-        return((psud, ci))
+        return (psud, ci)
 
     def clear(self):
+        """
+        Clear contents of test_chains.
+
+        Returns
+        -------
+        None.
+
+        """
         self.test_chains = dict()
 
 
 def main():
+    """
+    Evalaute PSuD data with command line arguments.
+
+    Returns
+    -------
+    None.
+
+    """
     # Set up argument parser
     parser = argparse.ArgumentParser(
         description=__doc__)
@@ -698,5 +707,5 @@ def main():
 # --------------------------------[main]---------------------------------------
 
 
-if(__name__ == "__main__"):
+if __name__ == "__main__":
     main()
