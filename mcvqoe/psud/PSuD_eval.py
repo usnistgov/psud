@@ -297,28 +297,6 @@ class evaluate():
         clip_names = np.unique(test_dat['Filename'])
         return(clip_names)
 
-    def get_cutpoints(self, clip, test_name):
-        """
-        Load cutpoints for a given audio clip
-
-        Parameters
-        ----------
-        clip : str
-            Name of audio clip.
-        test_name : str
-            Name of test audio clip used in.
-
-        Returns
-        -------
-        pd.DataFrame
-            Cutpoints for clip
-
-        """
-        # Get cutpoints for clipname
-        fpath = "{}.csv".format(os.path.join(self.cp_path, test_name, clip))
-        cp = pd.read_csv(fpath)
-        return(cp)
-
     def get_test_chains(self, method, threshold, method_weight=None):
         """
         Determine longest successful chain of words for each trial of a test
