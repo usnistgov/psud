@@ -2,7 +2,6 @@ import mcvqoe.base
 import mcvqoe.delay
 import abcmrt
 import glob
-import scipy.io.wavfile
 import numpy as np
 import csv
 import re
@@ -269,12 +268,12 @@ class measure:
             #make full path from relative paths
             f_full=os.path.join(self.audio_path,f)
             # load audio
-            fs_file, audio_dat = scipy.io.wavfile.read(f_full)
+            fs_file, audio_dat = mcvqoe.base.audio_read(f_full)
             #check fs
             if(fs_file != abcmrt.fs):
                 raise RuntimeError(f'Expected fs to be {abcmrt.fs} but got {fs_file} for {f}')
             # Convert to float sound array and add to list
-            self.y.append( mcvqoe.base.audio_float(audio_dat))
+            self.y.append(audio_dat)
             #strip extension from file
             fne,_=os.path.splitext(f_full)
             #add .csv extension
@@ -460,7 +459,7 @@ class measure:
             out_name=os.path.join(wavdir,f'Tx_{name}')
             #check if saving audio, cutpoints are needed for processing
             if(self.save_tx_audio and self.save_audio):
-                scipy.io.wavfile.write(out_name+'.wav', int(self.audio_interface.sample_rate), dat)
+                mcvqoe.base.audio_write(out_name+'.wav', int(self.audio_interface.sample_rate), dat)
             mcvqoe.base.write_cp(out_name+'.csv',cp)
             
         #---------------------------[write log entry]---------------------------
@@ -599,7 +598,7 @@ class measure:
         """
         
         #---------------------[Load in recorded audio]---------------------
-        fs,rec_dat = scipy.io.wavfile.read(fname)
+        fs, rec_dat = mcvqoe.base.audio_read(fname)
         if(abcmrt.fs != fs):
             raise RuntimeError('Recorded sample rate does not match!')
         
@@ -612,7 +611,7 @@ class measure:
         else:
             voice_dat=rec_dat
 
-        rec_dat=mcvqoe.base.audio_float(voice_dat)
+        rec_dat = voice_dat
         
         #------------------------[calculate M2E]------------------------
         pos,dly = mcvqoe.delay.ITS_delay_est(self.y[clip_index], voice_dat, "f", fs=abcmrt.fs,min_corr=self.m2e_min_corr)
@@ -693,7 +692,7 @@ class measure:
                 if(clip_base and isinstance(self.split_audio_dest, str)):
                     outname=os.path.join(self.split_audio_dest,f'{clip_base}_cp{cp_num}_w{cpw["Clip"]}.wav')
                     #write out audio
-                    scipy.io.wavfile.write(outname, int(abcmrt.fs), audio[start:end])
+                    mcvqoe.base.audio_write(outname, int(abcmrt.fs), audio[start:end])
 
         #---------------------[Compute intelligibility]---------------------
         phi_hat,success=abcmrt.process(word_audio,word_num)
