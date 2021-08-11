@@ -15,6 +15,9 @@ CopySettings.json
 *.csv
 *.wav
 
+# Unignore test csvs
+!tests/test_data/reference/*.csv
+
 # Ignore version file
 mcvqoe/psud/version.py
 
