@@ -29,7 +29,8 @@ def simulate(channel_tech='clean',
              intell_est='trial',
              split_audio_dest=None,
              full_audio_dir=False,
-             test_id=None):
+             test_id=None,
+             pbi_post=False):
     """
     
 
@@ -143,7 +144,10 @@ def simulate(channel_tech='clean',
     test_obj.info['system'] = system
     test_obj.info['test_loc'] = "N/A"
     
-    sim_obj.pre_impairment=prob.process_audio
+    if pbi_post:
+        sim_obj.post_impairment = prob.process_audio
+    else:
+        sim_obj.pre_impairment = prob.process_audio
     
     #--------------------------------[Run Test]--------------------------------
     test_name = test_obj.run()
