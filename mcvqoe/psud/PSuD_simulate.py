@@ -11,28 +11,28 @@ import mcvqoe.hardware
 
 
 def simulate(channel_tech='clean',
-             channel_rate = None,
+             channel_rate=None,
              channel_m2e=None,
-             P_a1 = 1,
-             P_a2 = 1,
-             P_r = 1,
-             p_interval = 1,
-             audio_path = '',
+             P_a1=1,
+             P_a2=1,
+             P_r=1,
+             p_interval=1,
+             audio_path='',
              overplay=1.0,
-             trials = 100,
-             blockSize=512,#TODO: Does sim need this and bufSize
+             trials=100,
+             blockSize=512,  # TODO: Does sim need this and bufSize
              bufSize=20,
              outdir='',
-             info={'Test Type':'simulation','Pre Test Notes':None},
-             time_expand = [100e-3 - 0.11e-3, 0.11e-3],
-             m2e_min_corr = 0.76,
+             info={'Test Type': 'simulation', 'Pre Test Notes': None},
+             time_expand=[100e-3 - 0.11e-3, 0.11e-3],
+             m2e_min_corr=0.76,
              intell_est='trial',
              split_audio_dest=None,
              full_audio_dir=False,
              test_id=None,
              pbi_post=False):
     """
-    
+    Simulate PSuD measurement.
 
     Parameters
     ----------
@@ -81,80 +81,79 @@ def simulate(channel_tech='clean',
 
     """
 
-    #------------------------[Sim Settings]-----------------------------
-    #create sim object
-    sim_obj=mcvqoe.simulation.QoEsim(overplay=overplay)
-    #TODO : set sim parameters
-    sim_obj.channel_tech=channel_tech
-    
-    #set channel rate, check for None
-    if(channel_rate=='None'):
-        sim_obj.channel_rate=None
+    # ------------------------[Sim Settings]-----------------------------
+    # create sim object
+    sim_obj = mcvqoe.simulation.QoEsim(overplay=overplay)
+    # TODO : set sim parameters
+    sim_obj.channel_tech = channel_tech
+
+    # set channel rate, check for None
+    if(channel_rate == 'None'):
+        sim_obj.channel_rate = None
     else:
-        sim_obj.channel_rate=channel_rate
-    if(channel_m2e is not None):
-        sim_obj.m2e_latency=channel_m2e
-    
-    #construct string for system name
-    system=sim_obj.channel_tech
-    if(sim_obj.channel_rate is not None):
-        system+=' at '+str(sim_obj.channel_rate)
-            
-   #-------------------[Create Test object]---------------------------
-    
-    #create object here to use default values for arguments
-    test_obj = PSuD.measure(audio_path = audio_path,
-                 trials = trials,
-                 outdir=outdir,
-                 ri=sim_obj,# handled by sim object
-                 info=info,
-                 ptt_wait=0,# 0 for sim
-                 ptt_gap=0,# 0 for sim
-                 audio_interface=sim_obj,# handled by sim object
-                 time_expand = time_expand,
-                 m2e_min_corr = m2e_min_corr,
-                 get_post_notes = lambda : mcvqoe.gui.post_test(error_only=True),#only get test notes on error
-                 intell_est=intell_est,
-                 split_audio_dest=split_audio_dest,
-                 full_audio_dir=full_audio_dir,
-                 save_audio=False)
+        sim_obj.channel_rate = channel_rate
+    if channel_m2e is not None:
+        sim_obj.m2e_latency = channel_m2e
 
-    #-------------------------------[Probabilityiser]-------------------------
-    prob=mcvqoe.simulation.PBI()
-        
-    prob.P_a1=P_a1
-    prob.P_a2=P_a2
-    prob.P_r=P_r
-    prob.interval=p_interval
-    
-    
-    #-----------------------------[Log Info]--------------------------
+    # construct string for system name
+    system = sim_obj.channel_tech
+    if sim_obj.channel_rate is not None:
+        system += ' at ' + str(sim_obj.channel_rate)
 
+    # -------------------[Create Test object]---------------------------
+    # create object here to use default values for arguments
+    test_obj = PSuD.measure(
+        audio_path=audio_path,
+        trials=trials,
+        outdir=outdir,
+        ri=sim_obj,  # handled by sim object
+        info=info,
+        ptt_wait=0,  # 0 for sim
+        ptt_gap=0,  # 0 for sim
+        audio_interface=sim_obj,  # handled by sim object
+        time_expand=time_expand,
+        m2e_min_corr=m2e_min_corr,
+        get_post_notes=lambda: mcvqoe.gui.post_test(error_only=True),  # only get test notes on error
+        intell_est=intell_est,
+        split_audio_dest=split_audio_dest,
+        full_audio_dir=full_audio_dir,
+        save_audio=False,
+        )
+
+    # -------------------------------[Probabilityiser]-------------------------
+    prob = mcvqoe.simulation.PBI()
+
+    prob.P_a1 = P_a1
+    prob.P_a2 = P_a2
+    prob.P_r = P_r
+    prob.interval = p_interval
+
+    # -----------------------------[Log Info]--------------------------
     test_obj.info['codec'] = channel_tech
     test_obj.info['codec-rate'] = channel_rate
-    test_obj.info['PBI P_a1']=str(P_a1)
-    test_obj.info['PBI P_a2']=str(P_a2)
-    test_obj.info['PBI P_r'] =str(P_r)
-    test_obj.info['PBI interval']=str(p_interval)
+    test_obj.info['PBI P_a1'] = str(P_a1)
+    test_obj.info['PBI P_a2'] = str(P_a2)
+    test_obj.info['PBI P_r'] = str(P_r)
+    test_obj.info['PBI interval'] = str(p_interval)
     test_obj.info['test-ID'] = test_id
-    
+
     test_obj.info['test_type'] = "simulation"
     test_obj.info['tx_dev'] = "none"
     test_obj.info['rx_dev'] = "none"
     test_obj.info['system'] = system
     test_obj.info['test_loc'] = "N/A"
-    
+
     if pbi_post:
         sim_obj.post_impairment = prob.process_audio
     else:
         sim_obj.pre_impairment = prob.process_audio
-    
-    #--------------------------------[Run Test]--------------------------------
+
+    # --------------------------------[Run Test]------------------------------
     test_name = test_obj.run()
-    test_path = os.path.join(outdir,"data")
-    
+    test_path = os.path.join(outdir, "data")
+
     print(f"Test complete. Data stored in {test_path}")
-    return(test_name,prob)
+    return(test_name, prob)
 
 def main():
     #---------------------------[Create Test object]---------------------------
