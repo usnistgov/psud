@@ -30,7 +30,7 @@ def simulate(channel_tech='clean',
              split_audio_dest=None,
              full_audio_dir=False,
              test_id=None,
-             pbi_post=False):
+             pbi_post=True):
     """
     Simulate PSuD measurement.
 
@@ -74,6 +74,9 @@ def simulate(channel_tech='clean',
         DESCRIPTION. The default is False.
     testID : TYPE, optional
         DESCRIPTION. The default is None.
+    pbi_post : bool
+        Use PBI as a post-channel impairment rather than a pre-channel 
+        impairment.
 
     Returns
     -------
