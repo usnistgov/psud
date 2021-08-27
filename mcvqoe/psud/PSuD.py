@@ -1,22 +1,39 @@
+import abcmrt
+import csv
+import glob
 import mcvqoe.base
 import mcvqoe.delay
-import abcmrt
-import glob
-import numpy as np
-import csv
+import pkg_resources
 import re
-from distutils.util import strtobool
 import shutil
 import time
 import sys
 import os.path
 import datetime
 
+import numpy as np
+
+from distutils.util import strtobool
 from mcvqoe.base.terminal_user import terminal_progress_update
-#version import for logging purposes
+# version import for logging purposes
 from .version import version
 
+
 def chans_to_string(chans):
+    """
+    Convert list of audio channels to string.
+
+    Parameters
+    ----------
+    chans : list
+        List of audio channels in a measurement.
+
+    Returns
+    -------
+    str
+        Semicolon separated string of channels.
+
+    """
     #channel string
     return '('+(';'.join(chans))+')'
 
@@ -184,8 +201,6 @@ class measure:
                  
         self.rng=np.random.default_rng()
         #set default values
-        self.audio_files = []
-        self.audio_path = ''
         self.trials = 100
         self.outdir = ''
         self.ri = None
@@ -198,16 +213,30 @@ class measure:
         self.get_post_notes = None
         self.intell_est = 'trial'
         self.split_audio_dest = None
-        self.full_audio_dir = False
         self.progress_update = terminal_progress_update
         self.save_tx_audio = True
         self.save_audio = True
+
+        # Get all included audio file sets
+        self._default_audio_sets = pkg_resources.resource_listdir(
+            'mcvqoe.psud', 'audio_clips'
+            )
+        # Get path to audio file sets
+        self._default_audio_path = pkg_resources.resource_filename(
+            'mcvqoe.psud', 'audio_clips'
+            )
+        self.audio_files = []
+        # Make default audio first audio set
+        self.audio_path = os.path.join(self._default_audio_path,
+                                       self._default_audio_sets[0])
+        self.full_audio_dir = True
 
         for k, v in kwargs.items():
             if hasattr(self, k):
                 setattr(self, k, v)
             else:
                 raise TypeError(f"{k} is not a valid keyword argument")
+        
         
     def load_audio(self):
         """

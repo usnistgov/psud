@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import argparse
+import os
+
 from mcvqoe.psud import PSuD
 
 import mcvqoe.gui
@@ -23,11 +25,14 @@ def main():
     parser = argparse.ArgumentParser(
         description=__doc__)
     parser.add_argument(
-                        '-a', '--audio-files', default=[],action="extend", nargs="+", type=str,metavar='FILENAME',
-                        help='Path to audio files to use for test. Cutpoint files must also be present')
+                        '-a', '--audio-files', default=test_obj.audio_files,
+                        action="extend", nargs="+", type=str,metavar='FILENAME',
+                        help='Path to audio files to use for test. Cutpoint '
+                        + 'files must also be present')
     parser.add_argument(
                         '-f', '--audio-path', default=test_obj.audio_path, type=str,
-                        help='Path to look for audio files in. All audio file paths are relative to this unless they are absolute')
+                        help='Path to look for audio files in. All audio file '
+                        + 'paths are relative to this unless they are absolute')
     parser.add_argument('-t', '--trials', type=int, default=test_obj.trials,metavar='T',
                         help='Number of trials to use for test. Defaults to %(default)d')
     parser.add_argument("-r", "--radioport", default="",metavar='PORT',
@@ -60,7 +65,8 @@ def main():
                         help='Time to pause between trials')
     parser.add_argument('--m2e-min-corr', type=float, default=test_obj.m2e_min_corr, metavar='C',dest='m2e_min_corr',
                         help='Minimum correlation value for acceptable mouth 2 ear measurement (default: %(default)0.2f)')
-    parser.add_argument('-F','--full-audio-dir',dest='full_audio_dir',action='store_true',default=False,
+    parser.add_argument('-F','--full-audio-dir',dest='full_audio_dir',
+                        action='store_true',default=test_obj.full_audio_dir,
                         help='ignore --audioFiles and use all files in --audioPath')
     parser.add_argument('--no-full-audio-dir',dest='full_audio_dir',action='store_false',
                         help='use --audioFiles to determine which audio clips to read')
@@ -75,6 +81,11 @@ def main():
     parser.add_argument('--no-save-audio', dest='save_audio', action='store_false',
                         help='Don\'t save audio in the wav directory, implies'+
                         '--no-save-tx-audio')                                                
+    parser.add_argument('--audio-set',
+                        default=None,
+                        type=int,
+                        help='PsuD audio set to use for test. Integer between '
+                        + '1-4')
                         
     #-----------------------------[Parse arguments]-----------------------------
 
@@ -88,6 +99,14 @@ def main():
     for k,v in vars(args).items():
         if hasattr(test_obj,k):
             setattr(test_obj,k,v)
+    # Update with audio set if passed
+    if args.audio_set is not None:
+        if 1 <= args.audio_set and args.audio_set <= len(test_obj._default_audio_sets):
+            audio_set = test_obj._default_audio_sets[args.audio_set - 1]
+            test_obj.audio_path = os.path.join(test_obj._default_audio_path, audio_set)
+            test_obj.full_audio_dir = True
+        else:
+            raise ValueError('audio_set must be between 1-4')
     
     #---------------------[Set audio interface properties]---------------------
     test_obj.audio_interface.blocksize=args.blocksize
