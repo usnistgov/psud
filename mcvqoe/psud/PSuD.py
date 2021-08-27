@@ -1,22 +1,39 @@
+import abcmrt
+import csv
+import glob
 import mcvqoe.base
 import mcvqoe.delay
-import abcmrt
-import glob
-import numpy as np
-import csv
+import pkg_resources
 import re
-from distutils.util import strtobool
 import shutil
 import time
 import sys
 import os.path
 import datetime
 
+import numpy as np
+
+from distutils.util import strtobool
 from mcvqoe.base.terminal_user import terminal_progress_update
-#version import for logging purposes
+# version import for logging purposes
 from .version import version
 
+
 def chans_to_string(chans):
+    """
+    Convert list of audio channels to string.
+
+    Parameters
+    ----------
+    chans : list
+        List of audio channels in a measurement.
+
+    Returns
+    -------
+    str
+        Semicolon separated string of channels.
+
+    """
     #channel string
     return '('+(';'.join(chans))+')'
 
