@@ -31,6 +31,7 @@ setuptools.setup(
             'psud-measure-1loc=mcvqoe.psud.PSuD_1way_1loc:main',
             'psud-eval=mcvqoe.psud.PSuD_eval:main',
             'psud-reprocess=mcvqoe.psud.PSuD_reprocess:main',
+            'pandas',
         ],
     },
     python_requires='>=3.6',
