@@ -49,6 +49,7 @@ def parse_audio_chans(csv_str):
 
     return tuple(match.group('chans').split(';'))
 
+
 class measure:
     """
     Class to run and reprocess Probability of Successful Delivery tests.
@@ -218,13 +219,8 @@ class measure:
         self.save_audio = True
 
         # Get all included audio file sets
-        self._default_audio_sets = pkg_resources.resource_listdir(
-            'mcvqoe.psud', 'audio_clips'
-            )
-        # Get path to audio file sets
-        self._default_audio_path = pkg_resources.resource_filename(
-            'mcvqoe.psud', 'audio_clips'
-            )
+        self._default_audio_sets, self._default_audio_path = included_audio_sets()
+        
         self.audio_files = []
         # Make default audio first audio set
         self.audio_path = os.path.join(self._default_audio_path,
@@ -236,8 +232,29 @@ class measure:
                 setattr(self, k, v)
             else:
                 raise TypeError(f"{k} is not a valid keyword argument")
-        
-        
+
+    @staticmethod
+    def included_audio_sets():
+        """
+        Return audio sets and paths included in the package.
+    
+        Returns
+        -------
+        audio_sets : list
+            List of all included audio sets.
+        audio_path : str
+            Path to audio sets.
+    
+        """
+        audio_sets = pkg_resources.resource_listdir(
+            'mcvqoe.psud', 'audio_clips'
+            )
+        # Get path to audio file sets
+        audio_path = pkg_resources.resource_filename(
+            'mcvqoe.psud', 'audio_clips'
+            )
+    return audio_sets, audio_path
+
     def load_audio(self):
         """
         load audio files for use in test.
