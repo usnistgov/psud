@@ -219,7 +219,7 @@ class measure:
         self.save_audio = True
 
         # Get all included audio file sets
-        self._default_audio_sets, self._default_audio_path = included_audio_sets()
+        self._default_audio_sets, self._default_audio_path = self.included_audio_sets()
         
         self.audio_files = []
         # Make default audio first audio set
@@ -253,7 +253,7 @@ class measure:
         audio_path = pkg_resources.resource_filename(
             'mcvqoe.psud', 'audio_clips'
             )
-    return audio_sets, audio_path
+        return audio_sets, audio_path
 
     def load_audio(self):
         """
