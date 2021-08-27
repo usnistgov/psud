@@ -1,1 +1,2 @@
+recursive-include mcvqoe/psud/audio_clips *.wav
 recursive-exclude tests *
