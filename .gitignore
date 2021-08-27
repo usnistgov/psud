@@ -16,9 +16,13 @@ CopySettings.json
 *.wav
 # Unignore default audio
 !mcvqoe/psud/audio_clips/set1/*.wav
+!mcvqoe/psud/audio_clips/set1/*.csv
 !mcvqoe/psud/audio_clips/set2/*.wav
+!mcvqoe/psud/audio_clips/set2/*.csv
 !mcvqoe/psud/audio_clips/set3/*.wav
+!mcvqoe/psud/audio_clips/set3/*.csv
 !mcvqoe/psud/audio_clips/set4/*.wav
+!mcvqoe/psud/audio_clips/set4/*.csv
 # Unignore test csvs
 !tests/test_data/reference/*.csv
 
