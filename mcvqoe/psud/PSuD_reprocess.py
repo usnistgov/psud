@@ -41,7 +41,10 @@ def main():
     parser.add_argument('--intell-threshold',
                         type = float,
                         default = 0.5,
-                        help = "Intelligibility success threshold")                                                              
+                        help = "Intelligibility success threshold")
+    parser.add_argument('-T', '--p-thresh', type=float, dest="p_thresh", default=test_obj.p_thresh,
+                        help="The threshold of A-weight power for words, in dB, below which they"+
+                        " are considered to have no audio. (Defaults to %(default).1f dB)")
     #-----------------------------[Parse arguments]-----------------------------
 
     args = parser.parse_args()
@@ -50,6 +53,9 @@ def main():
 
     #set time expand
     test_obj.time_expand=args.time_expand
+
+    #set power threshold
+    test_obj.p_thresh = args.p_thresh
     
     with tempfile.TemporaryDirectory() as tmp_dir:
         

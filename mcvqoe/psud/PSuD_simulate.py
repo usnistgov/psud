@@ -262,6 +262,9 @@ def main():
                         type=int,
                         help='PsuD audio set to use for test. Integer between '
                         + '1-4')
+    parser.add_argument('-T', '--p-thresh', type=float, dest="p_thresh", default=test_obj.p_thresh,
+                        help="The threshold of A-weight power for words, in dB, below which they"+
+                        " are considered to have no audio. (Defaults to %(default).1f dB)")
                         
     #-----------------------------[Parse arguments]-----------------------------
 

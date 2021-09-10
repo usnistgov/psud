@@ -217,6 +217,7 @@ class measure:
         self.progress_update = terminal_progress_update
         self.save_tx_audio = True
         self.save_audio = True
+        self.p_thresh = -np.inf
 
         # Get all included audio file sets
         self._default_audio_sets, self._default_audio_path = self.included_audio_sets()
@@ -745,6 +746,14 @@ class measure:
         #---------------------[Compute intelligibility]---------------------
         phi_hat,success=abcmrt.process(word_audio,word_num)
         
+        if not np.isneginf(self.p_thresh):
+            for n, wa in enumerate(word_audio):
+                #do a-weight checks
+                pw = mcvqoe.base.a_weighted_power(wa,abcmrt.fs)
+                if pw < self.p_thresh:
+                    #power low, zero
+                    success[n] = 0
+
         #expand success so len is num_keywords
         success_pad=np.empty(self.num_keywords)
         success_pad.fill(np.nan)
@@ -807,6 +816,8 @@ class measure:
         
         #check if we should load audio
         if(load_audio):
+            #set full_audio_dir to false, as this will also pick up the Rx clips
+            self.full_audio_dir = False
             #set audio file names to Tx file names
             self.audio_files=['Tx_'+name+'.wav' for name in clips]
             
