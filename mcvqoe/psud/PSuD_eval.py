@@ -5,10 +5,11 @@ Created on Thu Jan  7 08:37:32 2021
 
 @author: jkp4
 """
+import argparse
+import json
 import os
 import warnings
-import pdb
-import argparse
+
 
 import numpy as np
 import pandas as pd
@@ -103,62 +104,68 @@ class evaluate():
     """
 
     def __init__(self,
-                 test_names,
+                 test_names=None,
                  test_path='',
                  wav_dirs=[],
+                 json_data=None,
                  **kwargs):
-        if isinstance(test_names, str):
-            test_names = [test_names]
-            if isinstance(wav_dirs, str):
-                wav_dirs = [wav_dirs]
-
-        if not wav_dirs:
-            wav_dirs = (None, ) * len(test_names)
-
-        # initialize info arrays
-        self.test_names = []
-        self.test_info = {}
-
-        # loop through all the tests and find files
-        for tn, wd in zip(test_names, wav_dirs):
-            # split name to get path and name
-            # if it's just a name all goes into name
-            dat_path, name = os.path.split(tn)
-            # split extension
-            # again ext is empty if there is none
-            # (unles there is a dot in the filename...) todo?
-            t_name, ext = os.path.splitext(name)
-
-            # check if a path was given to a .csv file
-            if not dat_path and not ext == '.csv':
-                # generate using test_path
-                dat_path = os.path.join(test_path, 'csv')
-                dat_file = os.path.join(dat_path, t_name+'.csv')
-                cp_path = os.path.join(test_path, 'wav')
-            else:
-                cp_path = os.path.join(os.path.dirname(dat_path))
-                dat_file = tn
-
-            # check if we were given an explicit wav directory
-            if wd:
-                # use given path
-                cp_path = wd
-                # get test name from wave path
-                # normalize path first to remove a, possible, trailing slash
-                t_name = os.path.basename(os.path.normpath(wd))
-            else:
-                # otherwise get path to the wav dir
-
-                # remove possible R in t_name
-                wt_name = t_name.replace('Rcapture', 'capture')
-                cp_path = os.path.join(cp_path, wt_name)
-
-            # put things into the test info structure
-            self.test_info[t_name] = {'data_path': dat_path,
-                                      'data_file': dat_file,
-                                      'cp_path': cp_path}
-            # append name to list of names
-            self.test_names.append(t_name)
+        if json_data is not None:
+            self.test_names, self.test_info, self.test_dat, self.cps = self.load_json_data(json_data)
+        else:
+            if isinstance(test_names, str):
+                test_names = [test_names]
+                if isinstance(wav_dirs, str):
+                    wav_dirs = [wav_dirs]
+    
+            if not wav_dirs:
+                wav_dirs = (None, ) * len(test_names)
+    
+            # initialize info arrays
+            self.test_names = []
+            self.test_info = {}
+    
+            # loop through all the tests and find files
+            for tn, wd in zip(test_names, wav_dirs):
+                # split name to get path and name
+                # if it's just a name all goes into name
+                dat_path, name = os.path.split(tn)
+                # split extension
+                # again ext is empty if there is none
+                # (unles there is a dot in the filename...) todo?
+                t_name, ext = os.path.splitext(name)
+    
+                # check if a path was given to a .csv file
+                if not dat_path and not ext == '.csv':
+                    # generate using test_path
+                    dat_path = os.path.join(test_path, 'csv')
+                    dat_file = os.path.join(dat_path, t_name+'.csv')
+                    cp_path = os.path.join(test_path, 'wav')
+                else:
+                    cp_path = os.path.join(os.path.dirname(dat_path))
+                    dat_file = tn
+    
+                # check if we were given an explicit wav directory
+                if wd:
+                    # use given path
+                    cp_path = wd
+                    # get test name from wave path
+                    # normalize path first to remove a, possible, trailing slash
+                    t_name = os.path.basename(os.path.normpath(wd))
+                else:
+                    # otherwise get path to the wav dir
+    
+                    # remove possible R in t_name
+                    wt_name = t_name.replace('Rcapture', 'capture')
+                    cp_path = os.path.join(cp_path, wt_name)
+    
+                # put things into the test info structure
+                self.test_info[t_name] = {'data_path': dat_path,
+                                          'data_file': dat_file,
+                                          'cp_path': cp_path}
+                # append name to list of names
+                self.test_names.append(t_name)
+                
+                self.test_dat, self.cps = self.load_sessions()
 
         # TODO: Add audio length - store max we've seen,
         self.max_audio_length = None
@@ -175,8 +182,7 @@ class evaluate():
             else:
                 raise TypeError(f"{k} is not a valid keyword argument")
 
-        self.test_dat, self.cps = self.load_sessions()
-
+        
     def load_session(self, test_name):
         """
         Load a PSuD data session.
@@ -240,6 +246,7 @@ class evaluate():
         nrow, _ = tests.shape
         tests.index = np.arange(nrow)
         return (tests, tests_cp)
+    
 
     def check_reprocess(self, fname):
         """
@@ -292,7 +299,55 @@ class evaluate():
 
         clip_names = np.unique(test_dat['Filename'])
         return clip_names
+    
+    def load_json_data(self, json_data):
+        """
+        Do all data loading from input json_data
 
+        Parameters
+        ----------
+        json_data : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
+        if isinstance(json_data, str):
+            json_data = json.loads(json_data)
+        tests = pd.DataFrame()
+        tests_cp = {}
+        test_names = []
+        for test_name, test_data in json_data.items():
+            tname, _ = os.path.splitext(os.path.basename(test_name))
+            test = pd.read_json(test_data['measurement'])
+            test['name'] = tname
+            test_names.append(tname)
+            cps = dict()
+            for filename, cp_json in test_data['cutpoints'].items():
+                cps[filename] = pd.read_json(cp_json)
+            
+            # cps = [pd.read_json(x) for x in json_data[test_name]['cutpoints']]
+            
+            test_clips = self.get_clip_names(test)
+            
+            test_cp = {}
+            for clip in test_clips:
+                if clip in cps:
+                    test_cp[clip] = cps[clip]
+                else:
+                    raise ValueError(
+                        f'Invalid json file, missing cutpoints for \'{clip}\''
+                        )
+            tests = tests.append(test)
+            tests_cp[tname] = test_cp
+        # Ensure that tests has unique row index
+        nrow, _ = tests.shape
+        tests.index = np.arange(nrow)
+        
+        test_info = 'json'
+        return test_names, test_info, tests, tests_cp
     def get_test_chains(self, method, threshold, method_weight=None):
         """
         Determine longest successful chain of words for each trial of a test.
