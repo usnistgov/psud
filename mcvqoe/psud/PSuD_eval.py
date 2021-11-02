@@ -107,10 +107,12 @@ class evaluate():
                  test_names=None,
                  test_path='',
                  wav_dirs=[],
+                 use_reprocess=True,
                  json_data=None,
                  **kwargs):
+        self.use_reprocess = use_reprocess
         if json_data is not None:
-            self.test_names, self.test_info, self.test_dat, self.cps = self.load_json_data(json_data)
+            self.test_names, self.test_info, self.data, self.cps = self.load_json_data(json_data)
         else:
             if isinstance(test_names, str):
                 test_names = [test_names]
@@ -165,7 +167,7 @@ class evaluate():
                 # append name to list of names
                 self.test_names.append(t_name)
                 
-                self.test_dat, self.cps = self.load_sessions()
+                self.data, self.cps = self.load_sessions()
 
         # TODO: Add audio length - store max we've seen,
         self.max_audio_length = None
@@ -175,7 +177,7 @@ class evaluate():
         self.test_chains = dict()
 
         self.fs = 48e3
-        self.use_reprocess = True
+        
         for k, v in kwargs.items():
             if hasattr(self, k):
                 setattr(self, k, v)
@@ -381,17 +383,17 @@ class evaluate():
 
         if method == "ARF":
             method_intell = self.ARF_intelligibility(
-                self.test_dat.filter(regex=r"W\d+_Int"),
+                self.data.filter(regex=r"W\d+_Int"),
                 weight=method_weight)
         elif method == "AMI":
             if method_weight is not None:
                 warnings.warn("Method weight passed to AMI, will not be used")
             method_intell = self.AMI_intelligibility(
-                self.test_dat.filter(regex=r"W\d+_Int"))
+                self.data.filter(regex=r"W\d+_Int"))
         elif method == "EWC":
             if method_weight is not None:
                 warnings.warn("Method weight passed to EWC, will not be used")
-            method_intell = self.test_dat.filter(regex=r"W\d+_Int")
+            method_intell = self.data.filter(regex=r"W\d+_Int")
         else:
             raise ValueError('Invalid method passed: {}'.format(method))
 
@@ -399,7 +401,7 @@ class evaluate():
             # Test chains don't matter for AMI
             np_chains = method_intell
         else:
-            for ix, trial in self.test_dat.iterrows():
+            for ix, trial in self.data.iterrows():
 
                 chain_len = self.get_trial_chain_length(method_intell.loc[ix],
                                                         threshold)
