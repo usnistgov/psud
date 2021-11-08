@@ -8,11 +8,13 @@ Created on Thu Jan  7 08:37:32 2021
 import argparse
 import json
 import os
+import re
 import warnings
 
 
 import numpy as np
 import pandas as pd
+import plotly.express as px
 
 import mcvqoe.math
 import mcvqoe.simulation
@@ -681,7 +683,101 @@ class evaluate():
 
         """
         self.test_chains = dict()
+        
+    def plot_intelligibility(self, data='message', test_name=None, x=None,
+                             talkers=None):
+        """
+        Plot PSuD intelligibility data, either message or word. Message
+        averages intelligibility over each word in the trial.
 
+        Parameters
+        ----------
+        data : str, optional
+            Type of intelligibility to plot. Either 'message' or 'word'.
+            The default is 'message'.
+
+        Returns
+        -------
+        None.
+
+        """
+        columns = self.data.columns
+        
+        # Find all intelligibility columns
+        intell_cols = []
+        other_cols = []
+        word_search = re.compile('W(\d+)_Int')
+        for col in columns:
+            ws = word_search.search(col)
+            if ws is not None:
+                intell_cols.append(col)
+            else:
+                other_cols.append(col)
+        if data == 'message':
+            df = self.data
+            df['Intell'] = df[intell_cols].mean(axis=1)
+        elif data == 'word':
+            df = pd.melt(self.data,
+                         id_vars=other_cols,
+                         value_vars=intell_cols,
+                         value_name='Intell',
+                         )
+        else:
+            raise ValueError(f'Invalid data given \'{data}\'. Must be either \'message\' or \'word\'.')
+        
+         # Filter by session name if given
+        if test_name is not None:
+            df_filt = pd.DataFrame()
+            if not isinstance(test_name, list):
+                test_name = [test_name]
+            for name in test_name:
+                df_filt = df_filt.append(df[df['name'] == name])
+            df = df_filt
+       # Filter by talkers if given
+        if talkers is not None:
+            df_filt = pd.DataFrame()
+            if isinstance(talkers, str):
+                talkers = [talkers]
+            for talker in talkers:
+                ix = [talker in x for x in df['Filename']]
+                df_sub = df[ix]
+                df_sub['Talker'] = talker
+                df_filt = df_filt.append(df_sub)
+                
+            df = df_filt
+        else:
+            # TODO: Consider just dropping this into init/data load, might make things easier
+            pattern = re.compile(r'([FM]\d)(?:_n\d+_s\d+_c\d+)')
+            talkers = set()
+            talker_v = []
+            for index, row in df.iterrows():
+                res = pattern.search(row['Filename'])
+                if res is not None:
+                    talker = res.groups()[0]
+                    talkers.add(talker)
+                    talker_v.append(talker)
+                else:
+                    talker_v.append('NA')
+            df['Talker'] = talker_v 
+        # Set x-axis value
+        if x is None:
+            x = df.index
+        
+        fig = px.scatter(df, x=x, y='Intell',
+                          color='name',
+                          symbol='Talker',
+                          hover_name='Filename',
+                          )
+        fig.update_layout(legend=dict(
+            yanchor="bottom",
+            y=0.99,
+            xanchor="left",
+            x=0.01,
+            ),
+            legend_orientation="h",
+            showlegend=False,
+        )
+        return fig
 
 def main():
     """
