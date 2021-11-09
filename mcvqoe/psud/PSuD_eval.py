@@ -6,6 +6,7 @@ Created on Thu Jan  7 08:37:32 2021
 @author: jkp4
 """
 import argparse
+import itertools
 import json
 import os
 import re
@@ -15,11 +16,12 @@ import warnings
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 
 import mcvqoe.math
 import mcvqoe.simulation
 
-
+# TODO: Deprecate ARF and clean up overly general method things. Just make clean split between AMI vs EWC to make code easier to follow
 class evaluate():
     """
     Class to evaluate Probability of Successful Delivery tests.
@@ -721,8 +723,43 @@ class evaluate():
         """
         self.test_chains = dict()
         
+    def plot(self, methods, thresholds,
+             title='Probability of Successful Delivery by message length'):
+        # methods = ['EWC', 'AMI']
+        # thresholds = [0.5, 0.7]
+        message_lengths = np.arange(self.max_message_length + 1)
+        results = []
+        for method, thresh, msg_len, in itertools.product(methods, thresholds, message_lengths):
+            val, ci = self.eval(thresh, msg_len, method=method)
+            res = {
+                'Method': method,
+                'Intelligibility Threshold': thresh,
+                'Message Length (s)': msg_len,
+                'PSuD': val,
+                'Confidence Lower Bound': ci[0],
+                'Confidence Upper Bound': ci[1],
+                }
+            results.append(res)
+        df = pd.DataFrame(results)
+        # fig = px.scatter(df,
+        #                  x='Message Length (s)',
+        #                  y='PSuD',
+        #                  color='Method',
+        #                  symbol='Intelligibility Threshold',
+        #                  )
+        fig = px.line(df,
+                      x='Message Length (s)',
+                      y='PSuD',
+                      color='Method',
+                      symbol='Intelligibility Threshold',
+                      title=title,
+                      )
+        return fig
+        
+        
     def plot_intelligibility(self, data='message', test_name=None, x=None,
-                             talkers=None):
+                             talkers=None,
+                             title='Intelligibility Scatter Plot'):
         """
         Plot PSuD intelligibility data, either message or word. Message
         averages intelligibility over each word in the trial.
@@ -759,10 +796,12 @@ class evaluate():
                          value_vars=intell_cols,
                          value_name='Intell',
                          )
+            df = df.sort_values(by=['Timestamp', 'variable'])
+            df.index = np.arange(len(df))
         else:
             raise ValueError(f'Invalid data given \'{data}\'. Must be either \'message\' or \'word\'.')
         
-         # Filter by session name if given
+        # Filter by session name if given
         if test_name is not None:
             df_filt = pd.DataFrame()
             if not isinstance(test_name, list):
@@ -799,11 +838,15 @@ class evaluate():
         # Set x-axis value
         if x is None:
             x = df.index
-        
+        if data=='message':
+            symbol = 'Talker'
+        else:
+            symbol = 'variable'
         fig = px.scatter(df, x=x, y='Intell',
                           color='name',
-                          symbol='Talker',
+                          symbol=symbol,
                           hover_name='Filename',
+                          title=title,
                           )
         fig.update_layout(legend=dict(
             yanchor="bottom",
@@ -814,6 +857,31 @@ class evaluate():
             legend_orientation="h",
             showlegend=False,
         )
+        return fig
+    
+    def histogram(self,test_name=None, talkers=None,
+                  title='Histogram of longest EWC Messages'):
+        # fig = go.Figure()
+        # Make sure something exists in test chains
+        if 'EWC' not in self.test_chains:
+            _ = self.eval(0.5, 3, method='EWC')
+        df = pd.DataFrame()
+        for thresh, chains in self.test_chains['EWC'].items():
+            df_tmp = pd.DataFrame()
+            df_tmp['Chain'] = chains
+            df_tmp['Threshold'] = thresh
+            df = df.append(df_tmp)
+            # fig.add_trace(
+            #     go.Histogram(
+            #         x=chains,
+            #         # color_discrete_sequence=thresh,
+            #         )
+            #     )
+        fig = px.histogram(df,
+                           x='Chain',
+                           color='Threshold',
+                           title=title,
+                           )
         return fig
 
 def main():
