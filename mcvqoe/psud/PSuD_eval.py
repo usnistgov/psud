@@ -179,6 +179,7 @@ class evaluate():
         self.test_chains = dict()
 
         self.fs = 48e3
+        self.message_averages = None
         
         for k, v in kwargs.items():
             if hasattr(self, k):
@@ -352,6 +353,27 @@ class evaluate():
         
         test_info = 'json'
         return test_names, test_info, tests, tests_cp
+    
+    @property
+    def max_message_length(self):
+        """
+        Determine maximum message length in seconds from cutpoints
+
+        Returns
+        -------
+        max_word : float
+            Maximum message length in seconds.
+
+        """
+        max_audio_length = -np.Inf
+        for session, cps in self.cps.items():
+            for clip, cp in cps.items():
+                audio_len = np.max(cp['End'])/self.fs
+                max_audio_length = np.max([max_audio_length, audio_len])
+        
+        max_audio_length += 1/self.fs
+        return max_audio_length
+        
     def get_test_chains(self, method, threshold, method_weight=None):
         """
         Determine longest successful chain of words for each trial of a test.
@@ -631,32 +653,47 @@ class evaluate():
 
         """
         # TODO: if msg_len > self.max_audio_length report NaN
-
+        # TODO: Be smarter about AMI...test chains don't cahge
         # Calculate test chains for this threshold, if we don't already have
         # them
-        if method not in self.test_chains:
-            self.get_test_chains(method,
-                                 threshold,
-                                 method_weight=method_weight)
-        elif threshold not in self.test_chains[method]:
-            self.get_test_chains(method,
-                                 threshold,
-                                 method_weight=method_weight)
-        # if threshold not in self.test_chains:
-        #     self.get_test_chains(threshold)
-
-        # Get relevant test chains
-        test_chains = self.test_chains[method][threshold]
-
-        if method == "AMI":
+        if method == 'AMI':
+            
+            if self.message_averages is None:
+                self.message_averages = self.AMI_intelligibility(
+                    self.data.filter(regex=r"W\d+_Int")
+                    )
             msg_success = []
-            for ix, trial in test_chains.iterrows():
+            for ix, trial in self.message_averages.iterrows():
                 check_ix = np.floor(msg_len - 1).astype(int)
                 msg_success.append(trial[check_ix] >= threshold)
-
         else:
+            if method not in self.test_chains:
+                self.get_test_chains(method,
+                                     threshold,
+                                     method_weight=method_weight)
+            
+            elif threshold not in self.test_chains[method]:
+                self.get_test_chains(method,
+                                     threshold,
+                                     method_weight=method_weight)
+            # if threshold not in self.test_chains:
+            #     self.get_test_chains(threshold)
+    
+            # Get relevant test chains
+            test_chains = self.test_chains[method][threshold]
+            
             # Label chains as success or failure
             msg_success = test_chains >= msg_len
+
+        # if method == "AMI":
+        #     msg_success = []
+        #     for ix, trial in test_chains.iterrows():
+        #         check_ix = np.floor(msg_len - 1).astype(int)
+        #         msg_success.append(trial[check_ix] >= threshold)
+
+        # else:
+        #     # Label chains as success or failure
+        #     msg_success = test_chains >= msg_len
 
         # Calculate fraction of tests that match msg_len requirement
         psud = np.mean(msg_success)
