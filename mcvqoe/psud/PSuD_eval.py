@@ -847,6 +847,10 @@ class evaluate():
                           symbol=symbol,
                           hover_name='Filename',
                           title=title,
+                          labels={
+                              'index': 'Trial Number',
+                              'Intell': 'Intelligibility',
+                              },
                           )
         fig.update_layout(legend=dict(
             yanchor="bottom",
@@ -881,6 +885,9 @@ class evaluate():
                            x='Chain',
                            color='Threshold',
                            title=title,
+                           labels={
+                               'Chain': 'Consecutive Successful Words',
+                               },
                            )
         return fig
 
