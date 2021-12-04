@@ -62,7 +62,7 @@ class evaluate():
     fs : int
         Sample rate for audio
 
-    test_dat : pd.DataFrame
+    data : pd.DataFrame
         Data from all sessions
 
     cps : Dict
@@ -147,7 +147,7 @@ class evaluate():
                     dat_file = os.path.join(dat_path, t_name+'.csv')
                     cp_path = os.path.join(test_path, 'wav')
                 else:
-                    cp_path = os.path.join(os.path.dirname(dat_path))
+                    cp_path = os.path.join(os.path.dirname(dat_path), 'wav')
                     dat_file = tn
     
                 # check if we were given an explicit wav directory
@@ -188,8 +188,22 @@ class evaluate():
                 setattr(self, k, v)
             else:
                 raise TypeError(f"{k} is not a valid keyword argument")
-
-        
+    
+    def __repr__(self):
+        call_trace = f'{type(self).__module__}.{type(self).__name__}'
+        if self.test_info == 'json':
+            out = call_trace + f' loaded from json, original test_names={self.test_names}'
+        else:
+            tpaths = []
+            cppaths = []
+            for tname, tinfo in self.test_info.items():
+                tpaths.append(tinfo['data_file'])
+                cppaths.append(tinfo['cp_path'])
+            out = call_trace + '(' + f'test_names={tpaths}, ' + f'wav_dirs={cppaths}' + ')'
+         
+        return out
+    
+    
     def load_session(self, test_name):
         """
         Load a PSuD data session.
