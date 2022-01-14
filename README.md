@@ -1,19 +1,19 @@
-#PURPOSE
+# PURPOSE
 
 The purpose of this software is to measure the Probability of Successful Delivery
 (PSuD) of a push-to-talk network. PSuD generally describes the likelihood that
 a message of a given length. 
 
-Currently there is no, published, paper on PSuD, check back with PSCR@PSCR.gov 
+Currently there is no published paper on PSuD, check back with PSCR@PSCR.gov 
 for more information.
 
 # HARDWARE REQUIREMENTS
 - 1 computer able to run Python 3.9 or newer
 - 1 audio interface
-- 2 communications devices for testing
-- QoE box for connecting radios to
-- cables to connect test devices to QoE box
-- Audio cables to connect QoE box to audio interface
+- 2 push-to-talk communications devices for testing
+- QoE hardware
+- cables to connect test devices to QoE hardware
+- Audio cables to connect QoE hardware to audio interface
 
 # RUNNING MEASUREMENT SOFTWARE
 
