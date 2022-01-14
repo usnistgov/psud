@@ -5,7 +5,7 @@ The purpose of this software is to measure the Probability of Successful Deliver
 a message of a given length 
 
 # HARDWARE REQUIREMENTS
-- 1 computer able to run Python 3.6 or newer
+- 1 computer able to run Python 3.9 or newer
 - 1 audio interface
 - 2 communications devices for testing
 - QoE box for connecting radios to
@@ -15,6 +15,15 @@ a message of a given length
 # RUNNING MEASUREMENT SOFTWARE
 
 The easiest way to use the measurement system is to run the GUI (https://github.com/usnistgov/mcvqoe).
+
+## Installation and Software
+
+To install the `mcvqoe-psud` package, clone this repository and run the 
+following from the root of the git repository:
+
+```
+pip install .
+```
 
 # TECHNICAL SUPPORT
 For more information or assistance on access delay measurements please contact:
