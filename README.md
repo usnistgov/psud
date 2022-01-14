@@ -2,7 +2,10 @@
 
 The purpose of this software is to measure the Probability of Successful Delivery
 (PSuD) of a push-to-talk network. PSuD generally describes the likelihood that
-a message of a given length 
+a message of a given length. 
+
+Currently there is no, published, paper on PSuD, check back with PSCR@PSCR.gov 
+for more information.
 
 # HARDWARE REQUIREMENTS
 - 1 computer able to run Python 3.9 or newer
