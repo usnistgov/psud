@@ -7,6 +7,13 @@ a message of a given length.
 Currently there is no published paper on PSuD, check back with PSCR@PSCR.gov 
 for more information.
 
+## OBTAINING SOFTWARE
+
+- Probability of successful delivery measurement software available at:  https://github.com/usnistgov/psud
+- MCV QoE GUI software available at : https://github.com/usnistgov/mcvqoe
+- Core MCV QoE library available at : https://github.com/usnistgov/mcvqoe-base
+
+
 # HARDWARE REQUIREMENTS
 - 1 computer able to run Python 3.9 or newer
 - 1 audio interface
