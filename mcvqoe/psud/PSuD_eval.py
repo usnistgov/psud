@@ -344,8 +344,10 @@ class evaluate():
         
         out_json = {
             'measurement': self.data.to_json(),
-            'cps': json.dumps(cps),
-            'test_info': json.dumps(self.test_info)
+            'cps': cps,
+            'test_info': self.test_info,
+            # 'test_info': json.dumps(self.test_info),
+            
                 }
         
         # Final json representation of all data
@@ -375,13 +377,13 @@ class evaluate():
         # Extract data, cps, and test_info from json_data
         data = pd.read_json(json_data['measurement'])
         cps = {}
-        cp_data = json.loads(json_data['cps'])
+        cp_data = json_data['cps']
         for sesh, sesh_cps in cp_data.items():
             cps[sesh] = {}
             for talker_word, cp in sesh_cps.items():
                 cps[sesh][talker_word] = pd.read_json(cp)
         
-        test_info = json.loads(json_data['test_info'])
+        test_info = json_data['test_info']
         
         # Return normal Access data attributes from these
         return test_info.keys(), test_info, data, cps
