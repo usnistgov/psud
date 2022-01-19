@@ -321,6 +321,41 @@ class evaluate():
         clip_names = np.unique(test_dat['Filename'])
         return clip_names
     
+    def to_json(self, filename=None):
+        """
+        Create json representation of psud data
+
+        Parameters
+        ----------
+        filename : str, optional
+            If given save to json file. Otherwise returns json string. The default is None.
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        cps = {}
+        for sesh, sesh_cps in self.cps.items():
+            cps[sesh] = {}
+            for talker_word, cp in sesh_cps.items():
+                cps[sesh][talker_word] = cp.to_json()
+        
+        out_json = {
+            'measurement': self.data.to_json(),
+            'cps': json.dumps(cps),
+            'test_info': json.dumps(self.test_info)
+                }
+        
+        # Final json representation of all data
+        final_json = json.dumps(out_json)
+        if filename is not None:
+            with open(filename, 'w') as f:
+                json.dump(out_json, f)
+        
+        return final_json
+    
     def load_json_data(self, json_data):
         """
         Do all data loading from input json_data
@@ -337,38 +372,20 @@ class evaluate():
         """
         if isinstance(json_data, str):
             json_data = json.loads(json_data)
-        tests = pd.DataFrame()
-        tests_cp = {}
-        test_names = []
-        for test_name, test_data in json_data.items():
-            tname, _ = os.path.splitext(os.path.basename(test_name))
-            test = pd.read_json(test_data['measurement'])
-            test['name'] = tname
-            test_names.append(tname)
-            cps = dict()
-            for filename, cp_json in test_data['cutpoints'].items():
-                cps[filename] = pd.read_json(cp_json)
-            
-            # cps = [pd.read_json(x) for x in json_data[test_name]['cutpoints']]
-            
-            test_clips = self.get_clip_names(test)
-            
-            test_cp = {}
-            for clip in test_clips:
-                if clip in cps:
-                    test_cp[clip] = cps[clip]
-                else:
-                    raise ValueError(
-                        f'Invalid json file, missing cutpoints for \'{clip}\''
-                        )
-            tests = tests.append(test)
-            tests_cp[tname] = test_cp
-        # Ensure that tests has unique row index
-        nrow, _ = tests.shape
-        tests.index = np.arange(nrow)
+        # Extract data, cps, and test_info from json_data
+        data = pd.read_json(json_data['measurement'])
+        cps = {}
+        cp_data = json.loads(json_data['cps'])
+        for sesh, sesh_cps in cp_data.items():
+            cps[sesh] = {}
+            for talker_word, cp in sesh_cps.items():
+                cps[sesh][talker_word] = pd.read_json(cp)
         
-        test_info = 'json'
-        return test_names, test_info, tests, tests_cp
+        test_info = json.loads(json_data['test_info'])
+        
+        # Return normal Access data attributes from these
+        return test_info.keys(), test_info, data, cps
+        
     
     @property
     def max_message_length(self):
