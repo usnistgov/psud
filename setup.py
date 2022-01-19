@@ -10,7 +10,7 @@ setuptools.setup(
     description="Measurement code for the probability of successful delivery (PSuD)",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://gitlab.nist.gov/gitlab/PSCR/MCV/psud",
+    url="https://github.com/usnistgov/psud",
     packages=setuptools.find_namespace_packages(include=['mcvqoe.*']),
     include_package_data=True,
     use_scm_version={'write_to' : 'mcvqoe/psud/version.py'},
