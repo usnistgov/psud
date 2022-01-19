@@ -50,7 +50,7 @@ def parse_audio_chans(csv_str):
     return tuple(match.group('chans').split(';'))
 
 
-class measure:
+class measure(mcvqoe.base.Measure):
     """
     Class to run and reprocess Probability of Successful Delivery tests.
 
@@ -213,6 +213,7 @@ class measure:
         self.m2e_min_corr = 0.76
         self.get_post_notes = None
         self.intell_est = 'trial'
+        self.test = "1loc"
         self.split_audio_dest = None
         self.progress_update = terminal_progress_update
         self.save_tx_audio = True
@@ -424,7 +425,7 @@ class measure:
         
         return (hdr,fmt)
     
-    def run(self):
+    def run_1loc(self):
         """
         run a test with the properties of the class.
 
