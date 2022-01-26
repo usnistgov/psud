@@ -281,8 +281,7 @@ class measure(mcvqoe.base.Measure):
    
         #if we are not using all files, check that audio files is not empty
         if not self.audio_files and not self.full_audio_dir:
-            #TODO : is this the right error to use here??
-            raise ValueError('Expected self.audio_files to not be empty')
+            raise RuntimeError('Expected self.audio_files to not be empty')
 
         #check if we are making split audio
         if(self.split_audio_dest):
