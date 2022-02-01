@@ -173,9 +173,6 @@ class evaluate():
                 
                 self.data, self.cps = self.load_sessions()
 
-        # TODO: Add audio length - store max we've seen,
-        self.max_audio_length = None
-
         # Initialize empty dictionary to store test_chains in, keys will be
         # threshold values
         self.test_chains = dict()
@@ -237,6 +234,7 @@ class evaluate():
             fpath = os.path.join(self.test_info[test_name]['cp_path'],
                                  "Tx_{}.csv".format(clip))
             test_cp[clip] = pd.read_csv(fpath)
+
         return (test, test_cp)
 
     def load_sessions(self):
@@ -687,21 +685,30 @@ class evaluate():
             Confidence interval of level p for estimate.
 
         """
-        # TODO: if msg_len > self.max_audio_length report NaN
-        # TODO: Be smarter about AMI...test chains don't cahge
-        # Calculate test chains for this threshold, if we don't already have
-        # them
+        # if msg_len > self.max_audio_length report NaN (it's undefined)
+        if msg_len > self.max_message_length:
+            return np.nan, np.array([-np.inf, np.inf])
+        
         if method == 'AMI':
-            
+            # Initialize message averages if not already done
             if self.message_averages is None:
                 self.message_averages = self.AMI_intelligibility(
                     self.data.filter(regex=r"W\d+_Int")
                     )
-            msg_success = []
-            for ix, trial in self.message_averages.iterrows():
-                check_ix = np.floor(msg_len - 1).astype(int)
-                msg_success.append(trial[check_ix] >= threshold)
+            # Index to check for intelligibility condition
+            check_ix = np.floor(msg_len - 1).astype(int)
+            if check_ix < 0:
+                # If it is less than or equal to 0 PSuD is 1 (no message so reasonable default)
+                nrow, _ = self.message_averages.shape
+                msg_success = nrow * [True]
+            else:
+                # Check if intelligibility at location passes threshold
+                msg_success = list(
+                    self.message_averages.iloc[:, check_ix] >= threshold
+                    )
         else:
+            # Calculate test chains for this threshold, if we don't already have
+            # them
             if method not in self.test_chains:
                 self.get_test_chains(method,
                                      threshold,
@@ -711,8 +718,7 @@ class evaluate():
                 self.get_test_chains(method,
                                      threshold,
                                      method_weight=method_weight)
-            # if threshold not in self.test_chains:
-            #     self.get_test_chains(threshold)
+
     
             # Get relevant test chains
             test_chains = self.test_chains[method][threshold]
@@ -720,24 +726,13 @@ class evaluate():
             # Label chains as success or failure
             msg_success = test_chains >= msg_len
 
-        # if method == "AMI":
-        #     msg_success = []
-        #     for ix, trial in test_chains.iterrows():
-        #         check_ix = np.floor(msg_len - 1).astype(int)
-        #         msg_success.append(trial[check_ix] >= threshold)
-
-        # else:
-        #     # Label chains as success or failure
-        #     msg_success = test_chains >= msg_len
-
         # Calculate fraction of tests that match msg_len requirement
         psud = np.mean(msg_success)
 
-        if len(msg_success) > 1:
-            if len(msg_success) < 30:
-                warnings.warn(("Number of samples is small."
-                               "Reported confidence intervals may not be"
-                               "useful."))
+        if len(msg_success) > 1 and len(msg_success) < 30:
+            warnings.warn(("Number of samples is small."
+                           "Reported confidence intervals may not be"
+                           "useful."))
             # Calculate bootstrap uncertainty of msg success
             ci, _ = mcvqoe.math.bootstrap_ci(msg_success, p=p, R=R)
         else:
