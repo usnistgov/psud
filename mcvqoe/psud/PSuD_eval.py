@@ -251,19 +251,19 @@ class evaluate():
             test.
 
         """
-        tests = pd.DataFrame()
+        
+        tests = []
         tests_cp = {}
         for test_name in self.test_names:
             test, test_cp = self.load_session(test_name)
-            tests = tests.append(test)
-
+            tests.append(test)
+            
             # Store cutoints as a dictionary of test names with each value
             # being a dictionary of cutpoints for that test
             tests_cp[test_name] = test_cp
 
-        # Ensure that tests has unique row index
-        nrow, _ = tests.shape
-        tests.index = np.arange(nrow)
+        # Concatenate into a single dataframe with unique indexes
+        tests = pd.concat(tests, ignore_index=True)
         return (tests, tests_cp)
     
 
