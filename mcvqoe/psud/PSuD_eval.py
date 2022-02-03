@@ -750,11 +750,9 @@ class evaluate():
 
         """
         self.test_chains = dict()
-        
+    
     def plot(self, methods, thresholds,
              title='Probability of Successful Delivery by message length'):
-        # methods = ['EWC', 'AMI']
-        # thresholds = [0.5, 0.7]
         message_lengths = np.arange(self.max_message_length + 1)
         results = []
         for method, thresh, msg_len, in itertools.product(methods, thresholds, message_lengths):
@@ -769,12 +767,7 @@ class evaluate():
                 }
             results.append(res)
         df = pd.DataFrame(results)
-        # fig = px.scatter(df,
-        #                  x='Message Length (s)',
-        #                  y='PSuD',
-        #                  color='Method',
-        #                  symbol='Intelligibility Threshold',
-        #                  )
+
         fig = px.line(df,
                       x='Message Length (s)',
                       y='PSuD',
@@ -831,24 +824,25 @@ class evaluate():
         
         # Filter by session name if given
         if test_name is not None:
-            df_filt = pd.DataFrame()
+            df_filt = []
             if not isinstance(test_name, list):
                 test_name = [test_name]
             for name in test_name:
-                df_filt = df_filt.append(df[df['name'] == name])
-            df = df_filt
+                df_filt.append(df[df['name'] == name])
+                
+            df = pd.concat(df_filt)
        # Filter by talkers if given
         if talkers is not None:
-            df_filt = pd.DataFrame()
+            df_filt = []
             if isinstance(talkers, str):
                 talkers = [talkers]
             for talker in talkers:
                 ix = [talker in x for x in df['Filename']]
-                df_sub = df[ix]
+                df_sub = df.loc[ix].copy()
                 df_sub['Talker'] = talker
-                df_filt = df_filt.append(df_sub)
+                df_filt.append(df_sub)
                 
-            df = df_filt
+            df = pd.concat(df_filt)
         else:
             # TODO: Consider just dropping this into init/data load, might make things easier
             pattern = re.compile(r'([FM]\d)(?:_n\d+_s\d+_c\d+)')
@@ -891,24 +885,22 @@ class evaluate():
         )
         return fig
     
-    def histogram(self,test_name=None, talkers=None,
+    def histogram(self,
                   title='Histogram of longest EWC Messages'):
         # fig = go.Figure()
         # Make sure something exists in test chains
         if 'EWC' not in self.test_chains:
             _ = self.eval(0.5, 3, method='EWC')
-        df = pd.DataFrame()
+        df = []
         for thresh, chains in self.test_chains['EWC'].items():
-            df_tmp = pd.DataFrame()
-            df_tmp['Chain'] = chains
-            df_tmp['Threshold'] = thresh
-            df = df.append(df_tmp)
-            # fig.add_trace(
-            #     go.Histogram(
-            #         x=chains,
-            #         # color_discrete_sequence=thresh,
-            #         )
-            #     )
+            df_tmp = pd.DataFrame({
+                'Chain': chains,
+                'Threshold': thresh,
+                })
+            
+            df.append(df_tmp)
+
+        df = pd.concat(df)
         fig = px.histogram(df,
                            x='Chain',
                            color='Threshold',
