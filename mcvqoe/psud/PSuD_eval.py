@@ -752,7 +752,9 @@ class evaluate():
         self.test_chains = dict()
     
     def plot(self, methods, thresholds,
+             color_palette=px.colors.qualitative.Plotly,
              title='Probability of Successful Delivery by message length'):
+        
         message_lengths = np.arange(self.max_message_length + 1)
         results = []
         for method, thresh, msg_len, in itertools.product(methods, thresholds, message_lengths):
@@ -774,12 +776,14 @@ class evaluate():
                       color='Method',
                       symbol='Intelligibility Threshold',
                       title=title,
+                      color_discrete_sequence=color_palette,
                       )
         return fig
         
         
     def plot_intelligibility(self, data='message', test_name=None, x=None,
                              talkers=None,
+                             color_palette=px.colors.qualitative.Plotly,
                              title='Intelligibility Scatter Plot'):
         """
         Plot PSuD intelligibility data, either message or word. Message
@@ -873,6 +877,7 @@ class evaluate():
                               'index': 'Trial Number',
                               'Intell': 'Intelligibility',
                               },
+                          color_discrete_sequence=color_palette,
                           )
         fig.update_layout(legend=dict(
             yanchor="bottom",
@@ -886,6 +891,7 @@ class evaluate():
         return fig
     
     def histogram(self,
+                  color_palette=px.colors.qualitative.Plotly,
                   title='Histogram of longest EWC Messages'):
         # fig = go.Figure()
         # Make sure something exists in test chains
@@ -908,6 +914,7 @@ class evaluate():
                            labels={
                                'Chain': 'Consecutive Successful Words',
                                },
+                           color_discrete_sequence=color_palette,
                            )
         return fig
 
