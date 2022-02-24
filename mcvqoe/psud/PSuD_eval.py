@@ -729,10 +729,11 @@ class evaluate():
         # Calculate fraction of tests that match msg_len requirement
         psud = np.mean(msg_success)
 
-        if len(msg_success) > 1 and len(msg_success) < 30:
-            warnings.warn(("Number of samples is small."
-                           "Reported confidence intervals may not be"
-                           "useful."))
+        if len(msg_success) > 1:
+            if len(msg_success) < 30:
+                warnings.warn(("Number of samples is small."
+                               "Reported confidence intervals may not be"
+                               "useful."))
             # Calculate bootstrap uncertainty of msg success
             ci, _ = mcvqoe.math.bootstrap_ci(msg_success, p=p, R=R)
         else:
