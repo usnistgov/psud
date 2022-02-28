@@ -27,8 +27,12 @@ for more information.
 The easiest way to use the measurement system is to run the GUI (https://github.com/usnistgov/mcvqoe).
 
 ## Installation and Software
+To install the package run the following:
+```
+pip install mcvqoe-psud
+```
 
-To install the `mcvqoe-psud` package, clone this repository and run the 
+Alternatively, to install the `mcvqoe-psud` package, clone this repository and run the 
 following from the root of the git repository:
 
 ```
