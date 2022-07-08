@@ -429,8 +429,11 @@ class measure(mcvqoe.base.Measure):
         return (hdr,fmt)
         
     def log_extra(self):
-        #add abcmrt version
+        # Add abcmrt version
         self.info['abcmrt version']=abcmrt.version
+        # Add blocksize and buffersize
+        self.blocksize = self.audio_interface.blocksize
+        self.buffersize = self.audio_interface.buffersize
         
     def test_setup(self):
         #-----------------------[Check audio sample rate]-----------------------
