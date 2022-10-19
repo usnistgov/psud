@@ -12,6 +12,7 @@ import os.path
 import datetime
 
 import numpy as np
+import mcvqoe.psud.PSuD_eval as evaluation
 
 from distutils.util import strtobool
 from mcvqoe.base.terminal_user import terminal_progress_update
@@ -575,3 +576,58 @@ class measure(mcvqoe.base.Measure):
         success_pad[:success.shape[0]]=success
         
         return success_pad
+
+    def post_write(self):
+        """Overwrites measure class post_write() in order to print PSuD results in
+        tests.log
+        """
+        
+        if self.get_post_notes:
+            # get notes
+            info = {}
+            info.update(self.get_post_notes())
+            eval_obj = evaluation.evaluate(test_names=self.data_filename)
+            info["mean"], info["ci"] = eval_obj.eval(threshold=0.5,
+                                                     msg_len=3,
+                                                     method="EWC")
+        else:
+            info = {}
+            
+        # finish log entry
+        self.post(info=info, outdir=self.outdir)
+        
+    def post(self, info={}, outdir=""):
+        """
+        Take in a QoE measurement class info dictionary to write post-test to tests.log.
+        Specific to PSuD
+        ...
+    
+        Parameters
+        ----------
+        info : dict
+            The <measurement>.info dictionary.
+        outdir : str
+            The directory to write to.
+        """
+    
+        # Add 'outdir' to tests.log path
+        log_datadir = os.path.join(outdir, "tests.log")
+        with open(log_datadir, "a") as file:
+            if "Error Notes" in info:
+                notes = info["Error Notes"]
+                header = "===Test-Error Notes==="
+            else:
+                header = "===Post-Test Notes==="
+                notes = info.get("Post Test Notes", "")
+    
+            # Write header
+            file.write(header + "\n")
+            # Write notes
+            file.write("".join(["\t" + line + "\n" for line in notes.splitlines(keepends=False)]))
+            # Write results
+            file.write("===PSuD Results===" + "\n")
+            file.write("\t" + "EWC PSuD Estimate for a message of length 3 seconds with intelligibility" + 
+                       f" threshold of 0.5: {info['mean']}" + "\n" + "\t"
+                       f'95% Confidence Interval: {np.array2string(info["ci"], separator=", ")}' + "\n")
+            # Write end
+            file.write("===End Test===\n\n")
