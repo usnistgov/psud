@@ -35,15 +35,14 @@ def chans_to_string(chans):
         Semicolon separated string of channels.
 
     """
-    #channel string
+    # channel string
     return '('+(';'.join(chans))+')'
 
 
 def parse_audio_chans(csv_str):
-    '''
-    Function to parse audio channels from csv file
-    '''
-    match=re.search('\((?P<chans>[^)]+)\)',csv_str)
+    """Function to parse audio channels from csv file"""
+    
+    match = re.search('\((?P<chans>[^)]+)\)', csv_str)
 
     if(not match):
         raise ValueError(f'Unable to parse chans {csv_str}, expected in the form "(chan1;chan2;...)"')
@@ -189,11 +188,13 @@ class measure(mcvqoe.base.Measure):
 
     measurement_name = "PSuD"
 
-    #on load conversion to datetime object fails for some reason
-    #TODO : figure out how to fix this, string works for now but this should work too:
-    #row[k]=datetime.datetime.strptime(row[k],'%d-%b-%Y_%H-%M-%S')
-    data_fields={"Timestamp":str,"Filename":str,"m2e_latency":float,"good_M2E":(lambda s: bool(strtobool(s))),"channels":parse_audio_chans}
-    no_log=('rng','y','clipi','data_dir','wav_data_dir','csv_data_dir','cutpoints','data_fields','time_expand_samples','num_keywords')
+    # on load conversion to datetime object fails for some reason
+    # TODO : figure out how to fix this, string works for now but this should work too:
+    # row[k] = datetime.datetime.strptime(row[k], '%d-%b-%Y_%H-%M-%S')
+    data_fields = {"Timestamp":str, "Filename":str, "m2e_latency":float,
+                   "good_M2E":(lambda s: bool(strtobool(s))), "channels":parse_audio_chans}
+    no_log = ('rng', 'y', 'clipi', 'data_dir', 'wav_data_dir', 'csv_data_dir',
+              'cutpoints', 'data_fields', 'time_expand_samples', 'num_keywords')
     
     def __init__(self, **kwargs):
         """
@@ -280,75 +281,75 @@ class measure(mcvqoe.base.Measure):
             If clip fs is not 48 kHz
         """
    
-        #if we are not using all files, check that audio files is not empty
+        # if we are not using all files, check that audio files is not empty
         if not self.audio_files and not self.full_audio_dir:
             raise RuntimeError('Expected self.audio_files to not be empty')
 
-        #check if we are making split audio
+        # check if we are making split audio
         if(self.split_audio_dest):
-            #make sure that splid audio directory exists
-            os.makedirs(self.split_audio_dest,exist_ok=True)
+            # make sure that splid audio directory exists
+            os.makedirs(self.split_audio_dest, exist_ok=True)
             
         if(self.full_audio_dir):
-            #override audio_files
-            self.audio_files=[]
-            #look through all things in audio_path
+            # override audio_files
+            self.audio_files = []
+            # look through all things in audio_path
             for f in os.scandir(self.audio_path):
-                #make sure this is a file
+                # make sure this is a file
                 if(f.is_file()): 
-                    #get extension
-                    _,ext=os.path.splitext(f.name)
-                    #check for .wav files
+                    # get extension
+                    _, ext = os.path.splitext(f.name)
+                    # check for .wav files
                     if(ext=='.wav'):
-                        #add to list
+                        # add to list
                         self.audio_files.append(f.name)
-                #TODO : recursive search?
+                # TODO : recursive search?
 
-        #list for input speech
-        self.y=[]
-        #list for cutpoints
-        self.cutpoints=[]
-        #list for word spacing
-        self.keyword_spacings=[]
+        # list for input speech
+        self.y = []
+        # list for cutpoints
+        self.cutpoints = []
+        # list for word spacing
+        self.keyword_spacings = []
         
         for f in self.audio_files:
-            #make full path from relative paths
-            f_full=os.path.join(self.audio_path,f)
+            # make full path from relative paths
+            f_full = os.path.join(self.audio_path, f)
             # load audio
             fs_file, audio_dat = mcvqoe.base.audio_read(f_full)
-            #check fs
+            # check fs
             if(fs_file != abcmrt.fs):
                 raise RuntimeError(f'Expected fs to be {abcmrt.fs} but got {fs_file} for {f}')
             # Convert to float sound array and add to list
             self.y.append(audio_dat)
-            #strip extension from file
-            fne,_=os.path.splitext(f_full)
-            #add .csv extension
-            fcsv=fne+'.csv'
-            #load cutpoints
+            # strip extension from file
+            fne, _ = os.path.splitext(f_full)
+            # add .csv extension
+            fcsv = fne+'.csv'
+            # load cutpoints
             cp=mcvqoe.base.load_cp(fcsv)
-            #add cutpoints to array
+            # add cutpoints to array
             self.cutpoints.append(cp)
             
-            starts=[]
-            ends=[]
-            lens=[]
+            starts = []
+            ends = []
+            lens = []
             for cpw in cp:
                 if(np.isnan(cpw['Clip'])):
-                    #check if this is the first clip, if so skip
-                    #TODO: deal with this better?
+                    # check if this is the first clip, if so skip
+                    # TODO: deal with this better?
                     if(ends):
-                        ends[-1]=cpw['End']
-                        lens[-1]=ends[-1]-starts[-1]
+                        ends[-1] = cpw['End']
+                        lens[-1] = ends[-1]-starts[-1]
                 else:
                     starts.append(cpw['Start'])
                     ends.append(cpw['End'])
                     lens.append(ends[-1]-starts[-1])
             
-            #word spacing is minimum distance converted to seconds
+            # word spacing is minimum distance converted to seconds
             self.keyword_spacings.append(min(lens)/abcmrt.fs)
             
-    def set_time_expand(self,t_ex):
+    def set_time_expand(self, t_ex):
         """
         convert time expand from seconds to samples and ensure a 2 element vector.
         
@@ -365,16 +366,16 @@ class measure(mcvqoe.base.Measure):
         self.time_expand_samples=np.array(t_ex)
         
         if(len(self.time_expand_samples)==1):
-            #make symmetric interval
-            self.time_expand_samples=np.array([self.time_expand_samples,]*2)
+            # make symmetric interval
+            self.time_expand_samples = np.array([self.time_expand_samples,]*2)
 
-        #convert to samples
-        self.time_expand_samples=np.ceil(
+        # convert to samples
+        self.time_expand_samples = np.ceil(
                 self.time_expand_samples*abcmrt.fs
                 ).astype(int)
         
     def audio_clip_check(self):
-    #TODO : this could probably be moved into load_audio, also not 100% sure this name makes sense
+    # TODO : this could probably be moved into load_audio, also not 100% sure this name makes sense
         """
         find the number of keywords in clips.
         
@@ -387,18 +388,18 @@ class measure(mcvqoe.base.Measure):
         Returns
         -------
         """
-        #number of keyword columns to have in the .csv file
-        self.num_keywords=0
-        #check cutpoints and count keywaords
+        # number of keyword columns to have in the .csv file
+        self.num_keywords = 0
+        # check cutpoints and count keywaords
         for cp in self.cutpoints:
-            #count the number of actual keywords
-            n=sum(not np.isnan(w['Clip']) for w in cp)
-            #set num_keywords to max values
-            self.num_keywords=max(n,self.num_keywords)
+            # count the number of actual keywords
+            n = sum(not np.isnan(w['Clip']) for w in cp)
+            # set num_keywords to max values
+            self.num_keywords = max(n, self.num_keywords)
             
         if(self.full_audio_dir):
-            #overide trials to use all the trials
-            self.trials=len(self.y)
+            # overide trials to use all the trials
+            self.trials = len(self.y)
 
 
     def csv_header_fmt(self):
@@ -418,25 +419,26 @@ class measure(mcvqoe.base.Measure):
         fmt : string
             format string for data lines for the .csv file
         """
-        hdr=','.join(self.data_fields.keys())
-        fmt='{'+'},{'.join(self.data_fields.keys())+'}'
+        hdr = ','.join(self.data_fields.keys())
+        fmt = '{'+'},{'.join(self.data_fields.keys())+'}'
         for word in range(self.num_keywords):
             hdr+=f',W{word}_Int'
             fmt+=f',{{intel[{word}]}}'
-        #add newlines at the end
+        # add newlines at the end
         hdr+='\n'
         fmt+='\n'
         
-        return (hdr,fmt)
+        return (hdr, fmt)
         
     def log_extra(self):
         # Add abcmrt version
-        self.info['abcmrt version']=abcmrt.version
+        self.info['abcmrt version'] = abcmrt.version
         # Add blocksize and buffersize
         self.blocksize = self.audio_interface.blocksize
         self.buffersize = self.audio_interface.buffersize
         
     def test_setup(self):
+        
         #-----------------------[Check audio sample rate]-----------------------
         if self.audio_interface is not None and \
             self.audio_interface.sample_rate != abcmrt.fs:
@@ -444,7 +446,7 @@ class measure(mcvqoe.base.Measure):
         #---------------------------[Set time expand]---------------------------
         self.set_time_expand(self.time_expand)
         
-    def process_audio(self,clip_index,fname,rec_chans):
+    def process_audio(self, clip_index, fname, rec_chans):
         """
         estimate mouth to ear latency and intelligibility for an audio clip.
 
@@ -463,43 +465,46 @@ class measure(mcvqoe.base.Measure):
         """
         
         #---------------------[Load in recorded audio]---------------------
+        
         fs, rec_dat = mcvqoe.base.audio_read(fname)
         if(abcmrt.fs != fs):
             raise RuntimeError('Recorded sample rate does not match!')
         
-        #check if we have more than one channel
+        # check if we have more than one channel
         if(rec_dat.ndim !=1 ):
-            #get the index of the voice channel
-            voice_idx=rec_chans.index('rx_voice')
-            #get voice channel
-            voice_dat=rec_dat[:,voice_idx]
+            # get the index of the voice channel
+            voice_idx = rec_chans.index('rx_voice')
+            # get voice channel
+            voice_dat = rec_dat[:,voice_idx]
         else:
-            voice_dat=rec_dat
+            voice_dat = rec_dat
 
         rec_dat = voice_dat
         
         #------------------------[calculate M2E]------------------------
-        pos,dly = mcvqoe.delay.ITS_delay_est(self.y[clip_index], voice_dat, "f", fs=abcmrt.fs,min_corr=self.m2e_min_corr)
+        
+        pos,dly = mcvqoe.delay.ITS_delay_est(self.y[clip_index], voice_dat, "f", fs=abcmrt.fs, min_corr=self.m2e_min_corr)
         
         if(not pos):
-            #M2E estimation did not go super well, try again but restrict M2E bounds to keyword spacing
-            pos,dly = mcvqoe.delay.ITS_delay_est(self.y[clip_index], voice_dat, "f", fs=abcmrt.fs,dlyBounds=(0,self.keyword_spacings[clip_index]))
+            # M2E estimation did not go super well, try again but restrict M2E bounds to keyword spacing
+            pos,dly = mcvqoe.delay.ITS_delay_est(self.y[clip_index], voice_dat, "f",
+                                                 fs=abcmrt.fs, dlyBounds=(0,self.keyword_spacings[clip_index]))
             
-            good_m2e=False
+            good_m2e = False
         else:
-            good_m2e=True
+            good_m2e = True
              
-        estimated_m2e_latency=dly / abcmrt.fs
+        estimated_m2e_latency = dly / abcmrt.fs
 
         #---------------------[Compute intelligibility]---------------------
         
-        #strip filename for basename in case of split clips
+        # strip filename for basename in case of split clips
         if(isinstance(self.split_audio_dest, str)):
-            (bname,_)=os.path.splitext(os.path.basename(fname))
+            (bname,_) = os.path.splitext(os.path.basename(fname))
         else:
-            bname=None
+            bname = None
 
-        success=self.compute_intelligibility(
+        success = self.compute_intelligibility(
                                             voice_dat,
                                             self.cutpoints[clip_index],
                                             dly,
@@ -514,7 +519,7 @@ class measure(mcvqoe.base.Measure):
                     'channels':chans_to_string(rec_chans),
                 }
 
-    def compute_intelligibility(self,audio,cutpoints,cp_shift,clip_base=None):
+    def compute_intelligibility(self,audio, cutpoints,cp_shift, clip_base=None):
         """
         estimate intelligibility for audio.
 
@@ -535,45 +540,47 @@ class measure(mcvqoe.base.Measure):
             returns a vector of intelligibility values padded to self.num_keywords
 
         """
+        
         #----------------[Cut audio and perform time expand]----------------
 
-        #array of audio data for each word
-        word_audio=[]
-        #array of word numbers
-        word_num=[]
-        #maximum index
-        max_idx=len(audio)-1
+        # array of audio data for each word
+        word_audio = []
+        # array of word numbers
+        word_num = []
+        # maximum index
+        max_idx = len(audio)-1
         
-        for cp_num,cpw in enumerate(cutpoints):
+        for cp_num, cpw in enumerate(cutpoints):
             if(not np.isnan(cpw['Clip'])):
-                #calculate start and end points
-                start=np.clip(cp_shift+cpw['Start']-self.time_expand_samples[0],0,max_idx)
-                end  =np.clip(cp_shift+cpw['End']  +self.time_expand_samples[1],0,max_idx)
-                #add word audio to array
+                # calculate start and end points
+                start = np.clip(cp_shift+cpw['Start']-self.time_expand_samples[0], 0, max_idx)
+                end  = np.clip(cp_shift+cpw['End']+self.time_expand_samples[1], 0, max_idx)
+                # add word audio to array
                 word_audio.append(audio[start:end])
-                #add word num to array
+                # add word num to array
                 word_num.append(cpw['Clip'])
 
                 if(clip_base and isinstance(self.split_audio_dest, str)):
-                    outname=os.path.join(self.split_audio_dest,f'{clip_base}_cp{cp_num}_w{cpw["Clip"]}.wav')
-                    #write out audio
+                    outname = os.path.join(self.split_audio_dest, f'{clip_base}_cp{cp_num}_w{cpw["Clip"]}.wav')
+                    # write out audio
                     mcvqoe.base.audio_write(outname, int(abcmrt.fs), audio[start:end])
 
         #---------------------[Compute intelligibility]---------------------
-        phi_hat,success=abcmrt.process(word_audio,word_num)
+        
+        phi_hat,success = abcmrt.process(word_audio, word_num)
         
         if not np.isneginf(self.p_thresh):
             for n, wa in enumerate(word_audio):
-                #do a-weight checks
-                pw = mcvqoe.base.a_weighted_power(wa,abcmrt.fs)
+                # do a-weight checks
+                pw = mcvqoe.base.a_weighted_power(wa, abcmrt.fs)
                 if pw < self.p_thresh:
-                    #power low, zero
+                    # power low, zero
                     success[n] = 0
 
-        #expand success so len is num_keywords
-        success_pad=np.empty(self.num_keywords)
+        # expand success so len is num_keywords
+        success_pad = np.empty(self.num_keywords)
         success_pad.fill(np.nan)
-        success_pad[:success.shape[0]]=success
+        success_pad[:success.shape[0]] = success
         
         return success_pad
 
