@@ -327,7 +327,7 @@ class measure(mcvqoe.base.Measure):
             # add .csv extension
             fcsv = fne+'.csv'
             # load cutpoints
-            cp=mcvqoe.base.load_cp(fcsv)
+            cp = mcvqoe.base.load_cp(fcsv)
             # add cutpoints to array
             self.cutpoints.append(cp)
             
@@ -483,12 +483,12 @@ class measure(mcvqoe.base.Measure):
         
         #------------------------[calculate M2E]------------------------
         
-        pos,dly = mcvqoe.delay.ITS_delay_est(self.y[clip_index], voice_dat, "f", fs=abcmrt.fs, min_corr=self.m2e_min_corr)
+        pos, dly = mcvqoe.delay.ITS_delay_est(self.y[clip_index], voice_dat, "f", fs=abcmrt.fs, min_corr=self.m2e_min_corr)
         
         if(not pos):
             # M2E estimation did not go super well, try again but restrict M2E bounds to keyword spacing
-            pos,dly = mcvqoe.delay.ITS_delay_est(self.y[clip_index], voice_dat, "f",
-                                                 fs=abcmrt.fs, dlyBounds=(0,self.keyword_spacings[clip_index]))
+            pos, dly = mcvqoe.delay.ITS_delay_est(self.y[clip_index], voice_dat, "f",
+                                                 fs=abcmrt.fs, dlyBounds=(0, self.keyword_spacings[clip_index]))
             
             good_m2e = False
         else:
@@ -567,7 +567,7 @@ class measure(mcvqoe.base.Measure):
 
         #---------------------[Compute intelligibility]---------------------
         
-        phi_hat,success = abcmrt.process(word_audio, word_num)
+        phi_hat, success = abcmrt.process(word_audio, word_num)
         
         if not np.isneginf(self.p_thresh):
             for n, wa in enumerate(word_audio):

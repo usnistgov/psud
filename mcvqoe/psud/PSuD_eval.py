@@ -8,18 +8,17 @@ Created on Thu Jan  7 08:37:32 2021
 import argparse
 import itertools
 import json
+import mcvqoe.math
+import mcvqoe.simulation
 import os
 import re
 import warnings
-
 
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-import mcvqoe.math
-import mcvqoe.simulation
 
 # TODO: Deprecate ARF and clean up overly general method things. Just make clean split between AMI vs EWC to make code easier to follow
 class evaluate():
@@ -114,6 +113,7 @@ class evaluate():
                  use_reprocess=True,
                  json_data=None,
                  **kwargs):
+        
         self.use_reprocess = use_reprocess
         if json_data is not None:
             self.test_names, self.test_info, self.data, self.cps = self.load_json_data(json_data)
@@ -137,7 +137,7 @@ class evaluate():
                 dat_path, name = os.path.split(tn)
                 # split extension
                 # again ext is empty if there is none
-                # (unles there is a dot in the filename...) todo?
+                # (unless there is a dot in the filename...) todo?
                 t_name, ext = os.path.splitext(name)
     
                 # check if a path was given to a .csv file
@@ -217,8 +217,8 @@ class evaluate():
 
         dict
             Dictionary with cutpoints for each clip
-
         """
+        
         fname = self.test_info[test_name]['data_file']
 
         if self.use_reprocess:
@@ -249,7 +249,6 @@ class evaluate():
         dict
             Dictionary of each test, with cutpoints for each clip for each
             test.
-
         """
         
         tests = []
@@ -285,8 +284,8 @@ class evaluate():
         -------
         str:
             Path to reprocessed file if it exits, otherwise returns fname
-
         """
+        
         dat_path, name = os.path.split(fname)
         if 'Rcapture' not in name:
             reprocess_fname = os.path.join(dat_path, 'R{}'.format(name))
@@ -312,9 +311,7 @@ class evaluate():
         -------
         np.array
             Array of clip names
-
         """
-        # Function to extract clip names from a session
 
         clip_names = np.unique(test_dat['Filename'])
         return clip_names
@@ -330,8 +327,7 @@ class evaluate():
 
         Returns
         -------
-        None.
-
+        None
         """
         
         cps = {}
@@ -345,7 +341,6 @@ class evaluate():
             'cps': cps,
             'test_info': self.test_info,
             # 'test_info': json.dumps(self.test_info),
-            
                 }
         
         # Final json representation of all data
@@ -367,9 +362,9 @@ class evaluate():
 
         Returns
         -------
-        None.
-
+        None
         """
+        
         if isinstance(json_data, str):
             json_data = json.loads(json_data)
         # Extract data, cps, and test_info from json_data
@@ -386,7 +381,6 @@ class evaluate():
         # Return normal Access data attributes from these
         return test_info.keys(), test_info, data, cps
         
-    
     @property
     def max_message_length(self):
         """
@@ -396,8 +390,8 @@ class evaluate():
         -------
         max_word : float
             Maximum message length in seconds.
-
         """
+        
         max_audio_length = -np.Inf
         for session, cps in self.cps.items():
             for clip, cp in cps.items():
@@ -433,8 +427,8 @@ class evaluate():
         -------
         np.array
             List of longest chain of successful words for each trial of a test
-
         """
+        
         chains = []
         times = []
 
@@ -494,8 +488,8 @@ class evaluate():
         int
             Number of words that achieved intelligibility greater than
             threshold
-
         """
+        
         failures = np.where(~(trial >= threshold))
         if failures[0].size == 0:
             chain_len = len(trial)
@@ -520,8 +514,8 @@ class evaluate():
         float
             Time in seconds associated with last word or silent section in the
             audio clip before intelligibility threshold was not achieved.
-
         """
+        
         if chain_length == 0:
             return 0
 
@@ -576,8 +570,8 @@ class evaluate():
         -------
         pd.DataFrame
             Filtered intelligibility results.
-
         """
+        
         # # Get number ofrows in data
         # nrow,_ = int_data.shape
         # # Ensure that int_data has unique row names
@@ -618,8 +612,8 @@ class evaluate():
         -------
         pd.DataFrame
             Smoothed intelligibility results.
-
         """
+        
         # Initialize new data frame
         fint = pd.DataFrame(columns=int_data.columns)
         for ix, trial in int_data.iterrows():
@@ -683,8 +677,8 @@ class evaluate():
 
         np.array
             Confidence interval of level p for estimate.
-
         """
+        
         # if msg_len > self.max_audio_length report NaN (it's undefined)
         if msg_len > self.max_message_length:
             return np.nan, np.array([-np.inf, np.inf])
@@ -747,9 +741,9 @@ class evaluate():
 
         Returns
         -------
-        None.
-
+        None
         """
+        
         self.test_chains = dict()
     
     def plot(self, methods, thresholds,
@@ -798,9 +792,9 @@ class evaluate():
 
         Returns
         -------
-        None.
-
+        None
         """
+        
         columns = self.data.columns
         
         # Find all intelligibility columns
@@ -894,6 +888,7 @@ class evaluate():
     def histogram(self,
                   color_palette=px.colors.qualitative.Plotly,
                   title='Histogram of longest EWC Messages'):
+        
         # fig = go.Figure()
         # Make sure something exists in test chains
         if 'EWC' not in self.test_chains:
@@ -925,9 +920,9 @@ def main():
 
     Returns
     -------
-    None.
-
+    None
     """
+    
     # Set up argument parser
     parser = argparse.ArgumentParser(
         description=__doc__)

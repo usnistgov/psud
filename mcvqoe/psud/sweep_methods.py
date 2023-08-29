@@ -4,11 +4,11 @@ Created on Mon Mar  1 09:40:42 2021
 
 @author: jkp4
 """
+
 import argparse
 import pdb
 import itertools
 import os
-
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,15 +16,14 @@ import pandas as pd
 import plotnine as pn
 import datetime
 
-
-
 from itertools import combinations
 from matplotlib.legend_handler import HandlerLine2D
+from PSuD_eval import evaluate
 # from plotnine import ggplot, geom_point, geom_line, aes
 
-from PSuD_eval import evaluate
 
 def sweep(t_proc):
+    
     methods = ["EWC","ARF", "AMI"]
     thresholds = [0.5, 0.7, 0.9]
     lengths = [1, 3, 5, 10]
@@ -116,6 +115,7 @@ def plot_sweep(results,outpath):
         # ax[1][pix].legend()
     plt.savefig(outpath)
         # plt.legend(handler_map={plots[0]: HandlerLine2D(numpoints=4)})
+        
 def condensed_plot(results,outpath):
     """
     Don't worry about weights, just fix one and compare
@@ -129,9 +129,9 @@ def condensed_plot(results,outpath):
 
     Returns
     -------
-    None.
-
+    None
     """
+    
     ARF_weight = 0.5
     
     methods = np.unique(results['Method'])
@@ -165,6 +165,7 @@ def condensed_plot(results,outpath):
     plt.savefig(outpath)
     
 def new_plot(results):
+    
     lengths = np.unique(results['Length'])
     methods = np.unique(results['Method'])
     # Code for one big messy plot
@@ -199,6 +200,7 @@ def new_plot(results):
     print(plots)
         
 #--------------------------[main]----------------------------------------------
+
 if(__name__ == "__main__"):
         # Set up argument parser
     parser = argparse.ArgumentParser(
@@ -230,12 +232,12 @@ if(__name__ == "__main__"):
                       fs = args.fs,
                       use_reprocess=True)
     if(args.outname is not None):
-        outname,_ = os.path.splitext(args.outname)
+        outname, _ = os.path.splitext(args.outname)
         plotname = outname + ".png"
-        if(not os.path.exists(outname+".csv")):
-            os.makedirs(os.path.dirname(outname),exist_ok=True)
+        if (not os.path.exists(outname+".csv")):
+            os.makedirs(os.path.dirname(outname), exist_ok=True)
             results = sweep(t_proc)
-            results.to_csv(outname+".csv",index=False)
+            results.to_csv(outname+".csv", index=False)
         else:
             print('reading cached results from {}'.format(outname+".csv"))
             results = pd.read_csv(outname+".csv")
@@ -243,8 +245,8 @@ if(__name__ == "__main__"):
         results = sweep(t_proc)
         plotname = 'sweep_{}.png'.format(datetime.datetime.now().strftime('%y-%m-%d_%H-%M-%S'))
     
-    plot_sweep(results,outpath=plotname)
-    condensed_plot(results,outpath = plotname.replace('.png','-condensed.png'))
+    plot_sweep(results, outpath=plotname)
+    condensed_plot(results, outpath=plotname.replace('.png', '-condensed.png'))
     #TODO: Can we call R from python?
                         
                 
