@@ -17,7 +17,6 @@ import warnings
 import numpy as np
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 
 
 # TODO: Deprecate ARF and clean up overly general method things. Just make clean split between AMI vs EWC to make code easier to follow
@@ -143,11 +142,13 @@ class evaluate():
                 # check if a path was given to a .csv file
                 if not dat_path and not ext == '.csv':
                     # generate using test_path
-                    dat_path = os.path.join(test_path, 'csv')
+                    # dat_path = os.path.join(test_path, 'csv')
+                    # We're now looking in main folder for csv files
+                    dat_path = test_path
                     dat_file = os.path.join(dat_path, t_name+'.csv')
-                    cp_path = os.path.join(test_path, 'wav')
+                    cp_path = test_path
                 else:
-                    cp_path = os.path.join(os.path.dirname(dat_path), 'wav')
+                    cp_path = os.path.dirname(dat_path)
                     dat_file = tn
     
                 # check if we were given an explicit wav directory
@@ -161,9 +162,14 @@ class evaluate():
                     # otherwise get path to the wav dir
     
                     # remove possible R in t_name
-                    wt_name = t_name.replace('Rcapture', 'capture')
+                    # wt_name = t_name.replace('Rcapture', 'capture')
+                    # 'capture' is no longer possibility
+                    wt_name = t_name.replace('R', '')
                     cp_path = os.path.join(cp_path, wt_name)
     
+                
+                # TODO Do I need to add this here?
+                cp_path = os.path.join(cp_path, 'wav')
                 # put things into the test info structure
                 self.test_info[t_name] = {'data_path': dat_path,
                                           'data_file': dat_file,
@@ -287,7 +293,9 @@ class evaluate():
         """
         
         dat_path, name = os.path.split(fname)
-        if 'Rcapture' not in name:
+        # if 'Rcapture' not in name:
+        # Check new file structure
+        if 'R' not in name:
             reprocess_fname = os.path.join(dat_path, 'R{}'.format(name))
             if os.path.exists(reprocess_fname):
                 out_name = reprocess_fname

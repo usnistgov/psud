@@ -1,15 +1,9 @@
 import abcmrt
-import csv
-import glob
 import mcvqoe.base
 import mcvqoe.delay
 import pkg_resources
 import re
-import shutil
-import time
-import sys
 import os.path
-import datetime
 
 import numpy as np
 import mcvqoe.psud.PSuD_eval as evaluation
@@ -202,12 +196,12 @@ class measure(mcvqoe.base.Measure):
 
         """
                  
-        self.rng=np.random.default_rng()
+        self.rng = np.random.default_rng()
         #set default values
         self.trials = 100
         self.outdir = ''
         self.ri = None
-        self.info = {'Test Type':'default','Pre Test Notes':''}
+        self.info = {'Test Type':'default', 'Pre Test Notes':''}
         self.ptt_wait = 0.68
         self.ptt_gap = 3.1
         self.audio_interface = None
@@ -419,6 +413,7 @@ class measure(mcvqoe.base.Measure):
         fmt : string
             format string for data lines for the .csv file
         """
+        
         hdr = ','.join(self.data_fields.keys())
         fmt = '{'+'},{'.join(self.data_fields.keys())+'}'
         for word in range(self.num_keywords):
@@ -431,6 +426,7 @@ class measure(mcvqoe.base.Measure):
         return (hdr, fmt)
         
     def log_extra(self):
+        
         # Add abcmrt version
         self.info['abcmrt version'] = abcmrt.version
         # Add blocksize and buffersize
@@ -440,10 +436,13 @@ class measure(mcvqoe.base.Measure):
     def test_setup(self):
         
         #-----------------------[Check audio sample rate]-----------------------
+        
         if self.audio_interface is not None and \
             self.audio_interface.sample_rate != abcmrt.fs:
             raise ValueError(f'audio_interface sample rate is {self.audio_interface.sample_rate} Hz but only {abcmrt.fs} Hz is supported')
+            
         #---------------------------[Set time expand]---------------------------
+        
         self.set_time_expand(self.time_expand)
         
     def process_audio(self, clip_index, fname, rec_chans):
@@ -489,12 +488,12 @@ class measure(mcvqoe.base.Measure):
             # M2E estimation did not go super well, try again but restrict M2E bounds to keyword spacing
             pos, dly = mcvqoe.delay.ITS_delay_est(self.y[clip_index], voice_dat, "f",
                                                  fs=abcmrt.fs, dlyBounds=(0, self.keyword_spacings[clip_index]))
-            
             good_m2e = False
+            
         else:
             good_m2e = True
              
-        estimated_m2e_latency = dly / abcmrt.fs
+        estimated_m2e_latency = dly/abcmrt.fs
 
         #---------------------[Compute intelligibility]---------------------
         
@@ -519,7 +518,7 @@ class measure(mcvqoe.base.Measure):
                     'channels':chans_to_string(rec_chans),
                 }
 
-    def compute_intelligibility(self,audio, cutpoints,cp_shift, clip_base=None):
+    def compute_intelligibility(self, audio, cutpoints, cp_shift, clip_base=None):
         """
         estimate intelligibility for audio.
 
@@ -584,7 +583,7 @@ class measure(mcvqoe.base.Measure):
         
         return success_pad
 
-    def post_write(self):
+    def post_write(self, test_folder=""):
         """Overwrites measure class post_write() in order to print PSuD results in
         tests.log
         """
@@ -601,9 +600,9 @@ class measure(mcvqoe.base.Measure):
             info = {}
             
         # finish log entry
-        self.post(info=info, outdir=self.outdir)
+        self.post(info=info, outdir=self.outdir, test_folder=test_folder)
         
-    def post(self, info={}, outdir=""):
+    def post(self, info={}, outdir="", test_folder=""):
         """
         Take in a QoE measurement class info dictionary to write post-test to tests.log.
         Specific to PSuD
@@ -638,3 +637,30 @@ class measure(mcvqoe.base.Measure):
                        f'95% Confidence Interval: {np.array2string(info["ci"], separator=", ")}' + "\n")
             # Write end
             file.write("===End Test===\n\n")
+        
+        # Check to see if test specific folder was given
+        if test_folder != "":
+            
+            # Add specific test folder to path
+            log_datadir = os.path.join(test_folder, "tests.log")
+            
+            # Write to individual test log file
+            with open(log_datadir, "a") as file:
+                if "Error Notes" in info:
+                    notes = info["Error Notes"]
+                    header = "===Test-Error Notes==="
+                else:
+                    header = "===Post-Test Notes==="
+                    notes = info.get("Post Test Notes", "")
+        
+                # Write header
+                file.write(header + "\n")
+                # Write notes
+                file.write("".join(["\t" + line + "\n" for line in notes.splitlines(keepends=False)]))
+                # Write results
+                file.write("===PSuD Results===" + "\n")
+                file.write("\t" + "EWC PSuD Estimate for a message of length 3 seconds with intelligibility" + 
+                           f" threshold of 0.5: {info['mean']}" + "\n" + "\t"
+                           f'95% Confidence Interval: {np.array2string(info["ci"], separator=", ")}' + "\n")
+                # Write end
+                file.write("===End Test===\n\n")
