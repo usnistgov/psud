@@ -214,6 +214,10 @@ class measure(mcvqoe.base.Measure):
         self.save_tx_audio = True
         self.save_audio = True
         self.p_thresh = -np.inf
+        # Multiple iteration variables
+        self.iterations = 1
+        self.data_filename = []
+        self.data_dirs = []
 
         # Get all included audio file sets
         self._default_audio_sets, self._default_audio_path = self.included_audio_sets()
@@ -444,6 +448,21 @@ class measure(mcvqoe.base.Measure):
         #---------------------------[Set time expand]---------------------------
         
         self.set_time_expand(self.time_expand)
+
+    def param_check(self):
+        """
+        Check that parameters are correct.
+
+        Raises
+        ------
+        ValueError
+            If there is an incorrect parameter.
+        """
+
+        if self.iterations < 1:
+            raise ValueError(
+                f"Can't have less than 1 iteration of a test. {self.iterations} iterations chosen."
+            )
         
     def process_audio(self, clip_index, fname, rec_chans):
         """
@@ -583,7 +602,7 @@ class measure(mcvqoe.base.Measure):
         
         return success_pad
 
-    def post_write(self, test_folder=""):
+    def post_write(self, test_folder="", file=""):
         """Overwrites measure class post_write() in order to print PSuD results in
         tests.log
         """
@@ -592,16 +611,19 @@ class measure(mcvqoe.base.Measure):
             # get notes
             info = {}
             info.update(self.get_post_notes())
-            eval_obj = evaluation.evaluate(test_names=self.data_filename)
-            info["mean"], info["ci"] = eval_obj.eval(threshold=0.5,
-                                                     msg_len=3,
-                                                     method="EWC")
+            for itr in range(len(file)):
+                eval_obj = evaluation.evaluate(test_names=file[itr])
+                info["mean"], info["ci"] = eval_obj.eval(threshold=0.5,
+                                                        msg_len=3,
+                                                        method="EWC")
+                self.post(info=info, outdir=self.outdir, test_folder=test_folder[itr])
+            
         else:
             info = {}
-            
-        # finish log entry
-        self.post(info=info, outdir=self.outdir, test_folder=test_folder)
-        
+            # finish log entry
+            for itr in range(len(file)):
+                self.post(info=info, outdir=self.outdir, test_folder=test_folder[itr])
+         
     def post(self, info={}, outdir="", test_folder=""):
         """
         Take in a QoE measurement class info dictionary to write post-test to tests.log.
