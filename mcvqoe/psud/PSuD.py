@@ -218,6 +218,8 @@ class measure(mcvqoe.base.Measure):
         self.iterations = 1
         self.data_filename = []
         self.data_dirs = []
+        # For compatibility in GUI. Can add to this later on
+        self.gui_extras = []
 
         # Get all included audio file sets
         self._default_audio_sets, self._default_audio_path = self.included_audio_sets()
